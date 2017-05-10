@@ -22,15 +22,6 @@ module RokuBuilder
       FileUtils.rm(File.join(root_dir, "manifest"))
     end
 
-    def test_manifest_manager_build_version
-      root_dir = File.join(File.dirname(__FILE__), "test_files", "manifest_manager_test")
-      FileUtils.cp(File.join(root_dir, "manifest_template"), File.join(root_dir, "manifest"))
-      build_version = nil
-      build_version = ManifestManager.build_version(root_dir: root_dir)
-      assert_equal "010101.1", build_version
-      FileUtils.rm(File.join(root_dir, "manifest"))
-    end
-
     def test_manifest_manager_build_version_zip
       root_dir = File.join(File.dirname(__FILE__), "test_files", "manifest_manager_test", "test.zip")
       build_version = nil

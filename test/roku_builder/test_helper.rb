@@ -20,7 +20,7 @@ def test_files_path(klass)
   File.join(File.dirname(__FILE__), "test_files", klass)
 end
 
-def build_options(options)
+def build_options(options = {screens: true})
   RokuBuilder::Options.new(options: options)
 end
 
