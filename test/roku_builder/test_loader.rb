@@ -11,6 +11,8 @@ module RokuBuilder
       response = Minitest::Mock.new
       navigator = Minitest::Mock.new
 
+      options = build_options
+      config = Config.new(options: options)
       root_dir = File.join(File.dirname(__FILE__), "test_files", "loader_test")
       device_config = {
         ip: "111.222.333",
@@ -18,11 +20,12 @@ module RokuBuilder
         password: "password",
         init_params: {root_dir: root_dir}
       }
+      config.instance_variable_set(:@parsed, {device_config: device_config, init_params: {}})
       loader_config = {
         content: {
-        folders: ["source"],
-        files: ["manifest"]
-      }
+          folders: ["source"],
+          files: ["manifest"]
+        }
       }
       payload = {
         mysubmit: "Replace",
@@ -31,34 +34,15 @@ module RokuBuilder
       path = "/plugin_install"
 
       navigator.expect(:nav, nil, [commands: [:home]])
-      faraday.expect(:headers, {})
-      faraday.expect(:request, nil, [:digest, device_config[:user], device_config[:password]])
-      faraday.expect(:request, nil, [:multipart])
-      faraday.expect(:request, nil, [:url_encoded])
-      faraday.expect(:adapter, nil, [Faraday.default_adapter])
-      connection.expect(:post, response) do |arg1, arg2|
-        assert_equal path, arg1
-        assert_equal payload[:mysubmit], arg2[:mysubmit]
-        assert payload[:archive] === arg2[:archive]
-      end
-      response.expect(:status, 200)
-      response.expect(:body, "Install Success")
-      response.expect(:status, 200)
-      response.expect(:body, "Install Success")
+      stub_request(:post, "#{device_config[:ip]}").with(body: payload)
 
-      loader = Loader.new(**device_config)
+      loader = Loader.new(config: config)
       result = nil
       build_version = nil
-      ManifestManager.stub(:build_version, "build_version") do
-        loader.stub(:build, "zip_file") do
-          Faraday.stub(:new, connection, faraday) do
-            Faraday::UploadIO.stub(:new, io) do
-              File.stub(:delete, nil) do
-                Navigator.stub(:new, navigator) do
-                  result, build_version = loader.sideload(**loader_config)
-                end
-              end
-            end
+      loader.stub(:build, "zip_file") do
+        File.stub(:delete, nil) do
+          Navigator.stub(:new, navigator) do
+            result, build_version = loader.sideload(**loader_config)
           end
         end
       end

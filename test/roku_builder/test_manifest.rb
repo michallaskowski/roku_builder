@@ -73,6 +73,26 @@ module RokuBuilder
       assert !!manifest.mm_icon_focus_hd
       assert !!manifest.mm_icon_focus_sd
     end
+    def test_manifest_increment_build_version
+      manifest = Manifest.new(config: @config)
+      assert_equal "010101.1", manifest.build_version
+      Time.stub(:now, Time.new(2001, 02, 01)) do
+        manifest.increment_build_version
+      end
+      manifest = Manifest.new(config: @config)
+      assert_equal "020101.2", manifest.build_version
+    end
+    def test_manifest_increment_build_version
+      manifest = Manifest.new(config: @config)
+      attributes = {
+        build_version: "1"
+      }
+      manifest.update(attributes: attributes)
+      assert_equal "1", manifest.build_version
+      manifest.increment_build_version
+      manifest = Manifest.new(config: @config)
+      assert_equal "2", manifest.build_version
+    end
   end
 end
 

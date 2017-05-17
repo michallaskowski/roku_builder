@@ -45,7 +45,7 @@ module RokuBuilder
       success = nil
       if stager.stage
         loader = Loader.new(**device_config)
-        build_version = ManifestManager.build_version(**config.parsed[:manifest_config])
+        build_version = Manifest.new(config:config).build_version
         options[:build_version] = build_version
         config.update
         success = loader.sideload(**config.parsed[:sideload_config])[0]
@@ -132,7 +132,7 @@ module RokuBuilder
       stager = Stager.new(**config.parsed[:stage_config])
       loader = Loader.new(**loader_config)
       if stager.stage
-        build_version = ManifestManager.build_version(**config.parsed[:manifest_config])
+        build_version = Manifest.new(config:config).build_version
         options[:build_version] = build_version
         config.update
         outfile = loader.build(**config.parsed[:build_config])
@@ -149,8 +149,10 @@ module RokuBuilder
       ### Update ###
       stager = Stager.new(**config.parsed[:stage_config])
       if stager.stage
-        old_version = ManifestManager.build_version(**config.parsed[:manifest_config])
-        new_version = ManifestManager.update_build(**config.parsed[:manifest_config])
+        manifest = Manifest.new(config: config)
+        old_version = manifest.build_version
+        manifest.increment_build_version
+        new_version = manifest.build_version
         Logger.instance.info "Update build version from:\n#{old_version}\nto:\n#{new_version}"
       end
       stager.unstage

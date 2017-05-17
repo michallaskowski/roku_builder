@@ -104,8 +104,9 @@ module RokuBuilder
 
       options = build_options({package: true, inspect: true, out: "/tmp/out.pkg", config: "~/.roku_config.json", set_stage: true})
       config = Config.new(options: options)
-      config.instance_variable_set(:@config, good_config)
+      config.instance_variable_set(:@config, good_config(ControllerCommandsTest))
       config.parse
+      FileUtils.cp(File.join(config.parsed[:root_dir], "manifest_template"), File.join(config.parsed[:root_dir], "manifest"))
       info = {app_name: "app", dev_id: "id", creation_date: "date", dev_zip: ""}
 
       loader.expect(:sideload, [SUCCESS, "build_version"], [config.parsed[:sideload_config]])
@@ -137,6 +138,7 @@ module RokuBuilder
       stager.verify
       packager.verify
       inspector.verify
+      FileUtils.rm(File.join(config.parsed[:root_dir], "manifest"))
     end
 
     def test_controller_commands_build
@@ -146,48 +148,41 @@ module RokuBuilder
       code = nil
       options = build_options({build: true, out_folder: "/tmp", config: "~/.roku_config.json", working: true})
       config = Config.new(options: options)
-      config.instance_variable_set(:@config, good_config)
+      config.instance_variable_set(:@config, good_config(ControllerCommandsTest))
       config.parse
+      FileUtils.cp(File.join(config.parsed[:root_dir], "manifest_template"), File.join(config.parsed[:root_dir], "manifest"))
       loader.expect(:build, "/tmp/build", [config.parsed[:build_config]])
       stager.expect(:stage, true)
       stager.expect(:unstage, true)
       stager.expect(:method, :git)
 
       Loader.stub(:new, loader) do
-        ManifestManager.stub(:build_version, "1") do
-          Stager.stub(:new, stager) do
-            code = Controller.send(:execute_commands, {options: options, config: config})
-          end
+        Stager.stub(:new, stager) do
+          code = Controller.send(:execute_commands, {options: options, config: config})
         end
       end
       assert_equal SUCCESS, code
       loader.verify
       stager.verify
+      FileUtils.rm(File.join(config.parsed[:root_dir], "manifest"))
     end
     def test_controller_commands_update
-      mock = Minitest::Mock.new
       stager = Minitest::Mock.new
 
       code = nil
       options = build_options({update: true, out_folder: "/tmp", config: "~/.roku_config.json", working: true})
       config = Config.new(options: options)
-      config.instance_variable_set(:@config, good_config)
+      config.instance_variable_set(:@config, good_config(ControllerCommandsTest))
       config.parse
-      mock.expect(:call, "1", [config.parsed[:manifest_config]])
-      mock.expect(:call, "2", [config.parsed[:manifest_config]])
+      FileUtils.cp(File.join(config.parsed[:root_dir], "manifest_template"), File.join(config.parsed[:root_dir], "manifest"))
       stager.expect(:stage, true)
       stager.expect(:unstage, true)
-
-      ManifestManager.stub(:build_version, mock) do
-        ManifestManager.stub(:update_build, mock) do
-          Stager.stub(:new, stager) do
-            code = Controller.send(:execute_commands, {options: options, config: config})
-          end
-        end
+      Stager.stub(:new, stager) do
+        code = Controller.send(:execute_commands, {options: options, config: config})
       end
-      mock.verify
       stager.verify
       assert_equal SUCCESS, code
+      FileUtils.rm(File.join(config.parsed[:root_dir], "manifest"))
     end
 
     def test_controller_commands_deeplink
@@ -257,9 +252,7 @@ module RokuBuilder
       loader.expect(:unload, nil)
       code = nil
       Loader.stub(:new, loader) do
-        ManifestManager.stub(:build_version, "1") do
-          code = Controller.send(:execute_commands, {options: options, config: config})
-        end
+        code = Controller.send(:execute_commands, {options: options, config: config})
       end
       assert_equal SUCCESS, code
       loader.verify
@@ -274,9 +267,7 @@ module RokuBuilder
       monitor.expect(:monitor, nil, [config.parsed[:monitor_config]])
       code = nil
       Monitor.stub(:new, monitor) do
-        ManifestManager.stub(:build_version, "1") do
-          code = Controller.send(:execute_commands, {options: options, config: config})
-        end
+        code = Controller.send(:execute_commands, {options: options, config: config})
       end
       assert_equal SUCCESS, code
       monitor.verify

@@ -26,6 +26,8 @@ module RokuBuilder
       setup_outfile
       setup_project_config
       setup_stage_config
+      setup_root_dir
+      # To be removed
       setup_sideload_config
       setup_package_config
       setup_monitor_configs
@@ -195,6 +197,17 @@ module RokuBuilder
       end
     end
 
+    def setup_root_dir
+      @parsed[:root_dir] = get_root_dir
+    end
+
+    def get_root_dir
+      root_dir = @parsed[:project_config][:directory] if @parsed[:project_config]
+      root_dir = @options[:in] if @options[:in]
+      root_dir = Pathname.pwd.to_s if @options[:current]
+      root_dir
+    end if
+
     def setup_sideload_config
       root_dir, content = setup_project_values
       # Create Sideload Config
@@ -304,12 +317,6 @@ module RokuBuilder
       }
     end
 
-    def get_root_dir
-      root_dir = @parsed[:project_config][:directory] if @parsed[:project_config]
-      root_dir = @options[:in] if @options[:in]
-      root_dir = Pathname.pwd.to_s if @options[:current]
-      root_dir
-    end if
 
     def setup_deeplink_configs
       @parsed[:deeplink_config] = {options: @options[:deeplink]}

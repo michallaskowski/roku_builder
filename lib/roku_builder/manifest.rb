@@ -22,6 +22,18 @@ module RokuBuilder
       write_file
     end
 
+    def increment_build_version
+      build_version_parts = @attributes[:build_version].split(".")
+      if build_version_parts.length == 2
+        build_version_parts[0] = Time.now.strftime("%m%d%y")
+        build_version_parts[1] = build_version_parts[1].to_i + 1
+        @attributes[:build_version] = build_version_parts.join(".")
+      else
+        @attributes[:build_version] = build_version_parts[0].to_i + 1
+      end
+      write_file
+    end
+
     def method_missing(method)
       @attributes[method]
     end

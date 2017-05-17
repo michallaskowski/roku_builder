@@ -12,8 +12,10 @@ SimpleCov.start
 require "byebug"
 require "roku_builder"
 require "minitest/autorun"
+require "webmock/minitest"
 
 RokuBuilder::Logger.set_testing
+WebMock.disable_net_connect!
 
 def test_files_path(klass)
   klass = klass.to_s.split("::")[1].underscore
@@ -24,7 +26,9 @@ def build_options(options = {screens: true})
   RokuBuilder::Options.new(options: options)
 end
 
-def good_config
+def good_config(klass=nil)
+  root_dir = "/tmp"
+  root_dir = test_files_path(klass) if klass
   {
     devices: {
     default: :roku,
@@ -37,7 +41,7 @@ def good_config
     projects: {
     default: :project1,
     project1: {
-    directory: "/tmp",
+    directory: root_dir,
     folders: ["resources","source"],
     files: ["manifest"],
     app_name: "<app name>",
@@ -53,7 +57,7 @@ def good_config
   }
   },
     project2: {
-    directory: "/tmp",
+    directory: root_dir,
     folders: ["resources","source"],
     files: ["manifest"],
     app_name: "<app name>",

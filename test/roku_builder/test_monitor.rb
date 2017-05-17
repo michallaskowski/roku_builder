@@ -4,16 +4,23 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class MonitorTest < Minitest::Test
-    def test_monitor_monit
-      connection = Minitest::Mock.new
+    def setup
+      options = build_options
+      @config = Config.new(options: options)
+      @connection = Minitest::Mock.new
       device_config = {
         ip: "111.222.333",
         user: "user",
         password: "password"
       }
-      monitor = Monitor.new(**device_config)
-
-      connection.expect(:waitfor, nil) do |config|
+      @config.instance_variable_set(:@parsed, {device_config: device_config, init_params: {}})
+      @monitor = Monitor.new(config: @config)
+    end
+    def teardown
+      @connection.verify
+    end
+    def test_monitor_monit
+      @connection.expect(:waitfor, nil) do |config|
         assert_equal(/./, config['Match'])
         assert_equal(false, config['Timeout'])
       end
@@ -24,29 +31,21 @@ module RokuBuilder
       }
 
       Readline.stub(:readline, readline) do
-        Net::Telnet.stub(:new, connection) do
-          monitor.monitor(type: :main)
+        Net::Telnet.stub(:new, @connection) do
+          @monitor.monitor(type: :main)
         end
       end
 
-      connection.verify
     end
 
     def test_monitor_monit_and_manage
-      connection = Minitest::Mock.new
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password"
-      }
-      monitor = Monitor.new(**device_config)
-      monitor.instance_variable_set(:@show_prompt, true)
+      @monitor.instance_variable_set(:@show_prompt, true)
 
-      connection.expect(:waitfor, nil) do |config, &blk|
-      assert_equal(/./, config['Match'])
-      assert_equal(false, config['Timeout'])
-      txt = "Fake Text"
-      blk.call(txt) == ""
+      @connection.expect(:waitfor, nil) do |config, &blk|
+        assert_equal(/./, config['Match'])
+        assert_equal(false, config['Timeout'])
+        txt = "Fake Text"
+        blk.call(txt) == ""
       end
 
       readline = proc {
@@ -55,35 +54,25 @@ module RokuBuilder
       }
 
       Readline.stub(:readline, readline) do
-        Net::Telnet.stub(:new, connection) do
-          monitor.stub(:manage_text, "") do
-            monitor.monitor(type: :main)
+        Net::Telnet.stub(:new, @connection) do
+          @monitor.stub(:manage_text, "") do
+            @monitor.monitor(type: :main)
           end
         end
       end
-
-      connection.verify
     end
 
     def test_monitor_monit_input
-      connection = Minitest::Mock.new
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password"
-      }
-      monitor = Monitor.new(**device_config)
-      monitor.instance_variable_set(:@show_prompt, true)
+      @monitor.instance_variable_set(:@show_prompt, true)
 
-      connection.expect(:waitfor, nil) do |config|
+      @connection.expect(:waitfor, nil) do |config|
         assert_equal(/./, config['Match'])
         assert_equal(false, config['Timeout'])
       end
-      connection.expect(:puts, nil) do |text|
+      @connection.expect(:puts, nil) do |text|
         assert_equal("text", text)
-        monitor.instance_variable_set(:@show_prompt, true)
+        @monitor.instance_variable_set(:@show_prompt, true)
       end
-
 
       readline = proc {
         @count ||= 0
@@ -98,26 +87,18 @@ module RokuBuilder
       }
 
       Readline.stub(:readline, readline) do
-        Net::Telnet.stub(:new, connection) do
-          monitor.monitor(type: :main)
+        Net::Telnet.stub(:new, @connection) do
+          @monitor.monitor(type: :main)
         end
       end
-
-      connection.verify
     end
 
     def test_monitor_manage_text
       mock = Minitest::Mock.new
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password"
-      }
-      monitor = Monitor.new(**device_config)
-      monitor.instance_variable_set(:@show_prompt, true)
-      monitor.instance_variable_set(:@mock, mock)
+      @monitor.instance_variable_set(:@show_prompt, true)
+      @monitor.instance_variable_set(:@mock, mock)
 
-      def monitor.puts(input)
+      def @monitor.puts(input)
         @mock.puts(input)
       end
 
@@ -126,7 +107,7 @@ module RokuBuilder
       all_text = "midline "
       txt = "split\nBrightScript Debugger> "
 
-      result = monitor.send(:manage_text, {all_text: all_text, txt: txt})
+      result = @monitor.send(:manage_text, {all_text: all_text, txt: txt})
 
       assert_equal "", result
 

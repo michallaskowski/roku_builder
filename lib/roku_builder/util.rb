@@ -8,22 +8,22 @@ module RokuBuilder
   class Util
 
     # Common initializer of device utils
-    # @param ip [String] IP address of roku device
-    # @param user [String] Username for roku device
-    # @param password [String] Password for roku device
-    def initialize(ip:, user:, password:, init_params: nil)
+    # @param config [Config] Configuration object for the app
+    def initialize(config: )
       @logger = Logger.instance
+      @config = config
+      @roku_ip_address = @config.parsed[:device_config][:ip]
+      @dev_username = @config.parsed[:device_config][:user]
+      @dev_password = @config.parsed[:device_config][:password]
       @device_config = {
-        ip: ip,
-        user: user,
-        password: password
+        ip: @roku_ip_address,
+        user: @dev_username,
+        password: @dev_password
       }
-      @roku_ip_address = ip
-      @dev_username = user
-      @dev_password = password
       @url = "http://#{@roku_ip_address}"
-      if init_params
-        init(**init_params)
+      key = self.class.to_s.split("::")[-1].underscore.to_sym
+      if @config.parsed[:init_params][key]
+        init(**@config.parsed[:init_params][key])
       else
         init
       end

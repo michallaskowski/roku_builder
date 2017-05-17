@@ -13,7 +13,7 @@ module RokuBuilder
       configs = ConfigParser.parse(options: options, config: config)
 
       assert_equal Hash, config.class
-      assert_equal "/tmp", configs[:manifest_config][:root_dir]
+      assert_equal "/tmp", configs[:root_dir]
     end
 
     def test_manifest_config_in
@@ -25,7 +25,7 @@ module RokuBuilder
       configs = ConfigParser.parse(options: options, config: config)
 
       assert_equal Hash, config.class
-      assert_equal "/dev/null/infile", configs[:manifest_config][:root_dir]
+      assert_equal "/dev/null/infile", configs[:root_dir]
       assert_equal :in, configs[:stage_config][:method]
     end
 
@@ -38,7 +38,7 @@ module RokuBuilder
       configs = ConfigParser.parse(options: options, config: config)
 
       assert_equal Hash, config.class
-      assert_equal File.join(Dir.pwd, "infile"), configs[:manifest_config][:root_dir]
+      assert_equal File.join(Dir.pwd, "infile"), configs[:root_dir]
       assert_equal :in, configs[:stage_config][:method]
     end
 
@@ -56,7 +56,7 @@ module RokuBuilder
       end
 
       assert_equal Hash, config.class
-      assert_equal "/dev/null/infile", configs[:manifest_config][:root_dir]
+      assert_equal "/dev/null/infile", configs[:root_dir]
       assert_equal :current, configs[:stage_config][:method]
     end
 

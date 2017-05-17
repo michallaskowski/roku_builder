@@ -15,7 +15,7 @@ module RokuBuilder
       end
 
       Dir.mktmpdir { |dir|
-        ManifestManager.update_manifest({root_dir: dir, attributes: {}})
+        Manifest.generate({config: @config, attributes: {}})
         Dir.mkdir(File.join(dir, "source"))
         File.open(File.join(dir, "source", "main.brs"), "w") do |io|
           io.puts "sub main()"
