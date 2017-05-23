@@ -10,12 +10,13 @@ module RokuBuilder
     # @param content [Hash] Hash containing arrays for folder, files, and excludes. Default: nil
     # @return [String] Build version on success, nil otherwise
     def sideload(update_manifest: false, content: nil, infile: nil, out_file: nil)
-      Navigator.new(**@device_config).nav(commands: [:home])
+      Navigator.new(config: @config).nav(commands: [:home])
       result = FAILED_SIDELOAD
       build_version = nil
+      out = out_file
       if infile
         build_version = Manifest.new(config: @config).build_version
-        out_file = infile
+        out = infile
       else
         # Update manifest
         manifest = Manifest.new(config: @config)
@@ -23,19 +24,19 @@ module RokuBuilder
           manifest.increment_build_version
         end
         build_version = manifest.build_version
-        @logger.info "Build: #{out_file}" if out_file
-        out_file = build(build_version: build_version, out_file: out_file, content: content)
+        @logger.info "Build: #{out}" if out
+        out = build(build_version: build_version, out_file: out, content: content)
       end
       path = "/plugin_install"
       # Connect to roku and upload file
       conn = multipart_connection
       payload =  {
         mysubmit: "Replace",
-        archive: Faraday::UploadIO.new(out_file, 'application/zip')
+        archive: Faraday::UploadIO.new(out, 'application/zip')
       }
       response = conn.post path, payload
       # Cleanup
-      File.delete(out_file) if infile.nil? and out_file.nil?
+      File.delete(out) if infile.nil? and out_file.nil?
       result = SUCCESS if response.status==200 and response.body=~/Install Success/
       result = IDENTICAL_SIDELOAD if response.status==200 and response.body=~/Identical to previous version/
       [result, build_version]
@@ -50,8 +51,8 @@ module RokuBuilder
     # @return [String] Path of the build
     def build(build_version: nil, out_file: nil, content: nil)
       content ||= {}
-      content[:folders] ||= Dir.entries(@root_dir).select {|entry| File.directory? File.join(@root_dir, entry) and !(entry =='.' || entry == '..') }
-      content[:files] ||= Dir.entries(@root_dir).select {|entry| File.file? File.join(@root_dir, entry)}
+      content[:folders] ||= Dir.entries(@config.parsed[:root_dir]).select {|entry| File.directory? File.join(@config.parsed[:root_dir], entry) and !(entry =='.' || entry == '..') }
+      content[:files] ||= Dir.entries(@config.parsed[:root_dir]).select {|entry| File.file? File.join(@config.parsed[:root_dir], entry)}
       content[:excludes] ||= []
       out_file = "#{Dir.tmpdir}/#{build_version}" unless out_file
       out_file = out_file+".zip" unless out_file.end_with?(".zip")
@@ -59,18 +60,18 @@ module RokuBuilder
       io = Zip::File.open(out_file, Zip::File::CREATE)
       # Add folders to zip
       content[:folders].each do |folder|
-        base_folder = File.join(@root_dir, folder)
+        base_folder = File.join(@config.parsed[:root_dir], folder)
         if File.exist?(base_folder)
           entries = Dir.entries(base_folder)
           entries.delete(".")
           entries.delete("..")
-          writeEntries(@root_dir, entries, folder, content[:excludes], io)
+          writeEntries(@config.parsed[:root_dir], entries, folder, content[:excludes], io)
         else
           @logger.warn "Missing Folder: #{base_folder}"
         end
       end
       # Add file to zip
-      writeEntries(@root_dir, content[:files], "", content[:excludes], io)
+      writeEntries(@config.parsed[:root_dir], content[:files], "", content[:excludes], io)
       io.close()
       out_file
     end
