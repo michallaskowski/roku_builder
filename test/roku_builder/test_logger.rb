@@ -6,6 +6,7 @@ module RokuBuilder
   class LoggerTest < Minitest::Test
 
     def test_logger
+      Logger.class_variable_set(:@@instance, nil)
       logger_a = Logger.instance
       logger_b = Logger.instance
       assert_equal logger_a, logger_b

@@ -5,6 +5,7 @@ require_relative "test_helper.rb"
 module RokuBuilder
   class LoaderTest < Minitest::Test
     def setup
+      Logger.set_testing
       options = build_options
       @config = Config.new(options: options)
       @root_dir = test_files_path(LoaderTest)

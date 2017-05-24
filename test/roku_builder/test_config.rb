@@ -4,6 +4,9 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class ConfigTest < Minitest::Test
+    def setup
+      Logger.set_testing
+    end
 
     def test_config_init
       options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), validate: true})
