@@ -4,41 +4,14 @@ require_relative "test_helper.rb"
 module RokuBuilder
   class InspectorTest < Minitest::Test
     def setup
-      @connection = Minitest::Mock.new
-      @faraday = Minitest::Mock.new
-      @io = Minitest::Mock.new
-      @response = Minitest::Mock.new
-
-      options = build_options
-      @config = Config.new(options: options)
-      @device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password"
-      }
-      @config.instance_variable_set(:@parsed, {device_config: @device_config, init_params: {}})
-      @path = "/plugin_inspect"
-      @password = "password"
-
-      @faraday.expect(:headers, {})
-      @faraday.expect(:request, nil, [:digest, @device_config[:user], @device_config[:password]])
-      @faraday.expect(:request, nil, [:multipart])
-      @faraday.expect(:request, nil, [:url_encoded])
-      @faraday.expect(:adapter, nil, [Faraday.default_adapter])
+      @config = build_config_object(InspectorTest)
+      @requests = []
     end
     def teardown
-      @connection.verify
-      @faraday.verify
-      @io.verify
-      @response.verify
+      @requests.each {|req| remove_request_stub(req)}
     end
     def test_inspector_inspect
 
-      payload ={
-        mysubmit: "Inspect",
-        password: @password,
-        archive: @io
-      }
       body = "r1.insertCell(0).innerHTML = 'App Name: ';"+
         "      r1.insertCell(1).innerHTML = '<div class=\"roku-color-c3\">app_name</div>';"+
         ""+
@@ -68,26 +41,11 @@ module RokuBuilder
         "      r4.insertCell(0).innerHTML = 'dev.zip: ';"+
         "      r4.insertCell(1).innerHTML = '<div class=\"roku-color-c3\"><font face=\"Courier\">dev_zip</font></div>';"
 
-      @connection.expect(:post, @response) do |arg1, arg2|
-        assert_equal @path, arg1
-        assert_equal payload[:mysubmit], arg2[:mysubmit]
-        assert_equal payload[:password], arg2[:passwd]
-        assert payload[:archive] === arg2[:archive]
-      end
-      @response.expect(:body, body)
-      @response.expect(:body, body)
-      @response.expect(:body, body)
-      @response.expect(:body, body)
-      @response.expect(:body, body)
+      @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
+        to_return(status: 200, body: body, headers: {}))
 
-
-      package_info = {}
       inspector = Inspector.new(config: @config)
-      Faraday.stub(:new, @connection, @faraday) do
-        Faraday::UploadIO.stub(:new, @io) do
-          package_info = inspector.inspect(pkg: "pkg/path", password: @password)
-        end
-      end
+      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: @password)
 
       assert_equal "app_name", package_info[:app_name]
       assert_equal "dev_id", package_info[:dev_id]
@@ -96,11 +54,6 @@ module RokuBuilder
 
     end
     def test_inspector_inspect_old_interface
-      payload ={
-        mysubmit: "Inspect",
-        password: @password,
-        archive: @io
-      }
       body = " <table cellpadding=\"2\">"+
         " <tbody><tr><td> App Name: </td><td> <font color=\"blue\">app_name</font> </td></tr>"+
         " <tr><td> Dev ID: </td><td> <font face=\"Courier\" color=\"blue\">dev_id</font> </td></tr>"+
@@ -123,25 +76,11 @@ module RokuBuilder
         " <tr><td> dev.zip: </td><td> <font face=\"Courier\" color=\"blue\">dev_zip</font> </td></tr>"+
         " </tbody></table>"
 
-      @connection.expect(:post, @response) do |arg1, arg2|
-        assert_equal @path, arg1
-        assert_equal payload[:mysubmit], arg2[:mysubmit]
-        assert_equal payload[:password], arg2[:passwd]
-        assert payload[:archive] === arg2[:archive]
-      end
-      @response.expect(:body, body)
-      @response.expect(:body, body)
-      @response.expect(:body, body)
-      @response.expect(:body, body)
+      @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
+        to_return(status: 200, body: body, headers: {}))
 
-
-      package_info = {}
       inspector = Inspector.new(config: @config)
-      Faraday.stub(:new, @connection, @faraday) do
-        Faraday::UploadIO.stub(:new, @io) do
-          package_info = inspector.inspect(pkg: "pkg/path", password: @password)
-        end
-      end
+      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: @password)
 
       assert_equal "app_name", package_info[:app_name]
       assert_equal "dev_id", package_info[:dev_id]
@@ -154,40 +93,22 @@ module RokuBuilder
         out_folder: "out/folder/path",
         out_file: nil
       }
-      payload ={
-        mysubmit: "Screenshot",
-        password: @password,
-        archive: @io
-      }
+
       body = "<hr /><img src=\"pkgs/dev.jpg?time=1455629573\">"
-      @connection.expect(:post, @response) do |arg1, arg2|
-        assert_equal @path, arg1
-        assert_equal payload[:mysubmit], arg2[:mysubmit]
-        assert_equal payload[:password], arg2[:passwd]
-        assert payload[:archive] === arg2[:archive]
-      end
-      @response.expect(:body, body)
-      @response.expect(:body, body)
+      @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
+        to_return(status: 200, body: body, headers: {}))
 
-
-      path2 = "pkgs/dev.jpg?time=1455629573"
       body2 = "<screencapture>"
-      @connection.expect(:get, @response, [path2])
-      @faraday.expect(:request, nil, [:digest, @device_config[:user], @device_config[:password]])
-      @faraday.expect(:adapter, nil, [Faraday.default_adapter])
-      @response.expect(:body, body2)
-      @response.expect(:success?, true)
-      @io.expect("write", nil, [body2])
+      @requests.push(stub_request(:get, "http://192.168.0.100/pkgs/dev.jpg?time=1455629573").
+        to_return(status: 200, body: body2, headers: {}))
 
+      io = Minitest::Mock.new()
+      io.expect("write", nil, [body2])
 
       success = false
       inspector = Inspector.new(config: @config)
-      Faraday.stub(:new, @connection, @faraday) do
-        Faraday::UploadIO.stub(:new, @io) do
-          File.stub(:open, nil, @io) do
-            success = inspector.screencapture(**screencapture_config)
-          end
-        end
+      File.stub(:open, nil, io) do
+        success = inspector.screencapture(**screencapture_config)
       end
 
       assert success
