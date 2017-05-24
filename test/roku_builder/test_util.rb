@@ -27,7 +27,7 @@ module RokuBuilder
       assert test.inited
     end
     def test_util_no_init
-      test = TestClass3.new(config: @config)
+      TestClass3.new(config: @config)
     end
     def test_util_options_parse_simple
       options = "a:b, c:d"

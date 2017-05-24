@@ -16,12 +16,12 @@ module RokuBuilder
       @config = nil
     end
     def test_manifest_read
-      manifest = Manifest.new(config: @config)
+      Manifest.new(config: @config)
     end
     def test_manifest_read_missing
       FileUtils.rm(File.join(@config.parsed[:root_dir], "manifest"))
       assert_raises ManifestError do
-        manifest = Manifest.new(config: @config)
+        Manifest.new(config: @config)
       end
     end
     def test_manifest_tite
@@ -82,7 +82,7 @@ module RokuBuilder
       manifest = Manifest.new(config: @config)
       assert_equal "020101.2", manifest.build_version
     end
-    def test_manifest_increment_build_version
+    def test_manifest_increment_single_part_build_version
       manifest = Manifest.new(config: @config)
       attributes = {
         build_version: "1"

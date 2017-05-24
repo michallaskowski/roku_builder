@@ -5,20 +5,17 @@ require_relative "test_helper.rb"
 module RokuBuilder
   class ProfilerTest < Minitest::Test
     def test_profiler_stats
-      waitfor = Proc.new do |config, &blk|
-      assert_equal(/.+/, config["Match"])
-      assert_equal(5, config["Timeout"])
-      txt = "<All_Nodes><NodeA /><NodeB /><NodeC><NodeD /></NodeC></All_Nodes>\n"
-      blk.call(txt)
-      true
+      Logger.set_testing
+      config = build_config_object(ProfilerTest)
+      waitfor = Proc.new do |telnet_config, &blk|
+        assert_equal(/.+/, telnet_config["Match"])
+        assert_equal(5, telnet_config["Timeout"])
+        txt = "<All_Nodes><NodeA /><NodeB /><NodeC><NodeD /></NodeC></All_Nodes>\n"
+        blk.call(txt)
+        true
       end
       connection = Minitest::Mock.new
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password"
-      }
-      profiler = Profiler.new(**device_config)
+      profiler = Profiler.new(config: config)
 
       connection.expect(:puts, nil, ["sgnodes all\n"])
       connection.expect(:waitfor, nil, &waitfor)

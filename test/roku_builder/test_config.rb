@@ -62,7 +62,7 @@ module RokuBuilder
       assert_equal :p1, config.raw[:projects][:default]
     end
 
-    def test_config_read_parent
+    def test_config_read_parent_child_part
       options = build_options({config: File.join(test_files_path(ConfigTest), "child.json"), validate: true})
       config = Config.new(options: options)
       config.load
@@ -70,7 +70,7 @@ module RokuBuilder
       assert_equal :p1, config.raw[:projects][:default]
     end
 
-    def test_config_read_parent
+    def test_config_read_parent_parent_part
       options = build_options({config: File.join(test_files_path(ConfigTest), "parent_projects.json"), validate: true})
       config = Config.new(options: options)
       config.load
@@ -151,7 +151,7 @@ module RokuBuilder
       File.delete(target_config) if File.exist?(target_config)
     end
 
-    def test_config_configure_edit_params
+    def test_config_configure_edit_params_default
       target_config = File.join(test_files_path(ConfigTest), "configure_test.json")
       options = build_options({
         config: target_config,

@@ -22,7 +22,7 @@ module RokuBuilder
       Net::Ping::External.stub(:new, ping) do
 
         ping.expect(:ping?, true, [parsed[:device_config][:ip], 1, 0.2, 1])
-        code, ret = Controller.send(:check_devices, {options: options, config: config})
+        code = Controller.send(:check_devices, {options: options, config: config})
         assert_equal GOOD_DEVICE, code
 
         ping.expect(:ping?, false, [parsed[:device_config][:ip], 1, 0.2, 1])

@@ -110,11 +110,6 @@ module RokuBuilder
     end
 
     def test_loader_unload
-      payload = {
-        mysubmit: "Delete",
-        archive: "",
-      }
-
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
         to_return(status: 200, body: "Install Success", headers: {}))
 
@@ -124,11 +119,6 @@ module RokuBuilder
       assert result
     end
     def test_loader_unload_fail
-      payload = {
-        mysubmit: "Delete",
-        archive: "",
-      }
-
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
         to_return(status: 200, body: "Install Failed", headers: {}))
 
