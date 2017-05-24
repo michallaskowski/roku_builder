@@ -3,10 +3,14 @@
 require_relative "test_helper.rb"
 
 module RokuBuilder
-  class Scriptertest < Minitest::Test
+  class ScripterTest < Minitest::Test
+    def setup
+      options = {print: "field", working: true}
+      @config = build_config_object(ScripterTest, options)
+    end
 
     def test_scripter_print_bad_attr
-      code = Scripter.print(attribute: :bad, configs: {})
+      code = Scripter.print(attribute: :bad, config: @config)
       assert_equal BAD_PRINT_ATTRIBUTE, code
     end
 
@@ -15,12 +19,11 @@ module RokuBuilder
       code = nil
       fake_print = lambda { |message, path|
         assert_equal "%s", message
-        assert_equal "/dev/null", path
+        assert_equal @config.parsed[:root_dir], path
         call_count+=1
       }
-      configs = {project_config: {directory: "/dev/null"}}
       Scripter.stub(:printf, fake_print) do
-        code = Scripter.print(attribute: :root_dir, configs: configs)
+        code = Scripter.print(attribute: :root_dir, config: @config)
       end
       assert_equal 1, call_count
       assert_equal SUCCESS, code
@@ -28,14 +31,13 @@ module RokuBuilder
     def test_scripter_print_config_app_name
       call_count = 0
       code = nil
-      fake_print = lambda { |message, path|
+      fake_print = lambda { |message, value|
         assert_equal "%s", message
-        assert_equal "TestApp", path
+        assert_equal "<app name>", value
         call_count+=1
       }
-      configs = {project_config: {app_name: "TestApp"}}
       Scripter.stub(:printf, fake_print) do
-        code = Scripter.print(attribute: :app_name, configs: configs)
+        code = Scripter.print(attribute: :app_name, config: @config)
       end
       assert_equal 1, call_count
       assert_equal SUCCESS, code
@@ -46,15 +48,11 @@ module RokuBuilder
       code = nil
       fake_print = lambda { |message, title|
         assert_equal "%s", message
-        assert_equal "title", title
+        assert_equal "Test", title
         call_count+=1
       }
-      manifest = {title: "title"}
-      configs = {project_config: {directory: "/dev/null"}}
       Scripter.stub(:printf, fake_print) do
-        ManifestManager.stub(:read_manifest, manifest) do
-          code = Scripter.print(attribute: :title, configs: configs)
-        end
+        code = Scripter.print(attribute: :title, config: @config)
       end
       assert_equal 1, call_count
       assert_equal SUCCESS, code
@@ -65,15 +63,11 @@ module RokuBuilder
       code = nil
       fake_print = lambda { |message, build|
         assert_equal "%s", message
-        assert_equal "010101.0001", build
+        assert_equal "010101.1", build
         call_count+=1
       }
-      manifest = {build_version: "010101.0001"}
-      configs = {project_config: {directory: "/dev/null"}}
       Scripter.stub(:printf, fake_print) do
-        ManifestManager.stub(:read_manifest, manifest) do
-          code = Scripter.print(attribute: :build_version, configs: configs)
-        end
+        code = Scripter.print(attribute: :build_version, config: @config)
       end
       assert_equal 1, call_count
       assert_equal SUCCESS, code
@@ -88,12 +82,8 @@ module RokuBuilder
         assert_equal "0", minor
         call_count+=1
       }
-      manifest = {major_version: "1", minor_version: "0"}
-      configs = {project_config: {directory: "/dev/null"}}
       Scripter.stub(:printf, fake_print) do
-        ManifestManager.stub(:read_manifest, manifest) do
-          code = Scripter.print(attribute: :app_version, configs: configs)
-        end
+        code = Scripter.print(attribute: :app_version, config: @config)
       end
       assert_equal 1, call_count
       assert_equal SUCCESS, code

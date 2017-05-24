@@ -8,7 +8,7 @@ module RokuBuilder
     # Prints attributes from config or project to allow scripting
     # @param attribute [Symbol] attribute to print
     # @param configs [Hash] Parsed config hash
-    def self.print(attribute:, configs:)
+    def self.print(attribute:, config:)
       attributes = [
         :title, :build_version, :app_version, :root_dir, :app_name
       ]
@@ -17,20 +17,20 @@ module RokuBuilder
         return BAD_PRINT_ATTRIBUTE
       end
 
-      read_config = {root_dir: configs[:project_config][:directory]}
+      manifest = Manifest.new(config: config)
 
       case attribute
       when :root_dir
-        printf "%s", configs[:project_config][:directory]
+        printf "%s", config.parsed[:project_config][:directory]
       when :app_name
-        printf "%s", configs[:project_config][:app_name]
+        printf "%s", config.parsed[:project_config][:app_name]
       when :title
-        printf "%s", ManifestManager.read_manifest(**read_config)[:title]
+        printf "%s", manifest.title
       when :build_version
-        printf "%s", ManifestManager.read_manifest(**read_config)[:build_version]
+        printf "%s", manifest.build_version
       when :app_version
-        major = ManifestManager.read_manifest(**read_config)[:major_version]
-        minor = ManifestManager.read_manifest(**read_config)[:minor_version]
+        major = manifest.major_version
+        minor = manifest.minor_version
         printf "%s.%s", major, minor
       end
       SUCCESS

@@ -45,12 +45,12 @@ module RokuBuilder
     def navigator_test(path:, input:, type:, success: true)
       if success
         if type == :nav
-          @requests.push(stub_request(:post, "http://111.222.333:8060#{path}").
+          @requests.push(stub_request(:post, "http://192.168.0.100:8060#{path}").
             to_return(status: 200, body: "", headers: {}))
         elsif type == :text
           input.split(//).each do |c|
             path = "/keypress/LIT_#{CGI::escape(c)}"
-            @requests.push(stub_request(:post, "http://111.222.333:8060#{path}").
+            @requests.push(stub_request(:post, "http://192.168.0.100:8060#{path}").
               to_return(status: 200, body: "", headers: {}))
           end
         end
