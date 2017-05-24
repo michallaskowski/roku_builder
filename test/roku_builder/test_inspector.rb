@@ -45,7 +45,7 @@ module RokuBuilder
         to_return(status: 200, body: body, headers: {}))
 
       inspector = Inspector.new(config: @config)
-      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: @password)
+      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: "password")
 
       assert_equal "app_name", package_info[:app_name]
       assert_equal "dev_id", package_info[:dev_id]
@@ -80,7 +80,7 @@ module RokuBuilder
         to_return(status: 200, body: body, headers: {}))
 
       inspector = Inspector.new(config: @config)
-      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: @password)
+      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: "password")
 
       assert_equal "app_name", package_info[:app_name]
       assert_equal "dev_id", package_info[:dev_id]

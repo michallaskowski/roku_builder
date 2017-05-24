@@ -65,6 +65,14 @@ module RokuBuilder
       end
     end
 
+    def root_dir=(root_dir)
+      @parsed[:root_dir] = root_dir
+    end
+
+    def method_missing(method)
+      @parsed[method]
+    end
+
     private
 
     def check_config_file

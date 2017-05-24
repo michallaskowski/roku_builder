@@ -100,5 +100,15 @@ module RokuBuilder
       refute tester.instance_variable_get(:@in_tests)
       assert_equal verify_text, tester.instance_variable_get(:@logs)
     end
+
+    def test_tester_handle_text_used_connection
+      tester = Tester.new(config: @config)
+
+      text = ["connection already in use"]
+
+      assert_raises IOError do
+        tester.send(:handle_text, {txt: text.join("\n")})
+      end
+    end
   end
 end

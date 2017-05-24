@@ -167,5 +167,14 @@ module RokuBuilder
       end
       File.delete(target_config) if File.exist?(target_config)
     end
+
+    def test_config_set_root_dir
+      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), validate: true})
+      config = Config.new(options: options)
+      config.load
+      config.parse
+      config.root_dir = "new/dir"
+      assert_equal "new/dir", config.root_dir
+    end
   end
 end

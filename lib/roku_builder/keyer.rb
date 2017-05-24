@@ -15,6 +15,8 @@ module RokuBuilder
       end
 
       Dir.mktmpdir { |dir|
+        config_copy = @config.dup
+        config_copy.root_dir = dir
         Manifest.generate({config: @config, attributes: {}})
         Dir.mkdir(File.join(dir, "source"))
         File.open(File.join(dir, "source", "main.brs"), "w") do |io|
