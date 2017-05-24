@@ -4,6 +4,14 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class NavigatorTest < Minitest::Test
+    def setup
+      Logger.set_testing
+      @config = build_config_object(NavigatorTest)
+      @requests = []
+    end
+    def teardown
+      @requests.each {|req| remove_request_stub(req)}
+    end
     def test_navigator_nav
       commands = {
         up: "Up",
@@ -35,63 +43,34 @@ module RokuBuilder
     end
 
     def navigator_test(path:, input:, type:, success: true)
-      connection = Minitest::Mock.new
-      faraday = Minitest::Mock.new
-      io = Minitest::Mock.new
-      response = Minitest::Mock.new
-
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
       if success
         if type == :nav
-          connection.expect(:post, response, [path])
-          response.expect(:success?, true)
+          @requests.push(stub_request(:post, "http://111.222.333:8060#{path}").
+            to_return(status: 200, body: "", headers: {}))
         elsif type == :text
           input.split(//).each do |c|
             path = "/keypress/LIT_#{CGI::escape(c)}"
-            connection.expect(:post, response, [path])
-            response.expect(:success?, true)
+            @requests.push(stub_request(:post, "http://111.222.333:8060#{path}").
+              to_return(status: 200, body: "", headers: {}))
           end
         end
-        faraday.expect(:headers, {})
-        faraday.expect(:request, nil, [:digest, device_config[:user], device_config[:password]])
-        faraday.expect(:request, nil, [:multipart])
-        faraday.expect(:request, nil, [:url_encoded])
-        faraday.expect(:adapter, nil, [Faraday.default_adapter])
       end if
 
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
       result = nil
-      Faraday.stub(:new, connection, faraday) do
-        if type == :nav
-          result = navigator.nav(commands: [input])
-        elsif type == :text
-          result = navigator.type(text: input)
-        end
+      if type == :nav
+        result = navigator.nav(commands: [input])
+      elsif type == :text
+        result = navigator.type(text: input)
       end
 
       assert_equal success, result
-
-      connection.verify
-      faraday.verify
-      io.verify
-      response.verify
     end
 
     def test_navigator_screen
       logger = Minitest::Mock.new
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
       Logger.class_variable_set(:@@instance, logger)
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
 
       logger.expect(:info, nil, ["Home x 5, Fwd x 3, Rev x 2,"])
       logger.expect(:unknown, nil, ["Cannot run command automatically"])
@@ -107,13 +86,7 @@ module RokuBuilder
     end
 
     def test_navigator_screen_fail
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
 
       assert !navigator.screen(type: :bad)
 
@@ -121,14 +94,8 @@ module RokuBuilder
 
     def test_navigator_screens
       logger = Minitest::Mock.new
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
       Logger.class_variable_set(:@@instance, logger)
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
 
       navigator.instance_variable_get("@screens").each_key do |key|
         logger.expect(:unknown, nil, [key])
@@ -147,14 +114,8 @@ module RokuBuilder
       getc.expect(:call, chr)
       chr.expect(:chr, "a")
 
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
 
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
       STDIN.stub(:echo=, nil) do
         STDIN.stub(:raw!, nil) do
           STDIN.stub(:getc, getc) do
@@ -176,14 +137,8 @@ module RokuBuilder
       read_nonblock.expect(:call, "a", [3])
       read_nonblock.expect(:call, "b", [2])
 
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
 
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
       STDIN.stub(:echo=, nil) do
         STDIN.stub(:raw!, nil) do
           STDIN.stub(:getc, getc) do
@@ -198,26 +153,13 @@ module RokuBuilder
     end
 
     def test_navigator_interactive
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
       navigator.stub(:read_char, "\u0003") do
         navigator.interactive
       end
     end
 
     def test_navigator_interactive_nav
-
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
 
       read_char = lambda {
         @i ||= 0
@@ -236,7 +178,7 @@ module RokuBuilder
         assert_equal :rev, args[:commands][0]
       }
 
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
       navigator.stub(:read_char, read_char) do
         navigator.stub(:nav, nav) do
           navigator.interactive
@@ -244,13 +186,6 @@ module RokuBuilder
       end
     end
     def test_navigator_interactive_text
-
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-        init_params: {mappings: {}}
-      }
 
       read_char = lambda {
         @i ||= 0
@@ -269,7 +204,7 @@ module RokuBuilder
         assert_equal "a", args[:text]
       }
 
-      navigator = Navigator.new(**device_config)
+      navigator = Navigator.new(config: @config)
       navigator.stub(:read_char, read_char) do
         navigator.stub(:type, type) do
           navigator.interactive

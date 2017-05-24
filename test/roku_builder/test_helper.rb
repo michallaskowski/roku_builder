@@ -18,6 +18,18 @@ require "webmock/minitest"
 
 RokuBuilder::Logger.set_testing
 WebMock.disable_net_connect!
+def build_config_object(klass)
+  options = build_options
+  config = RokuBuilder::Config.new(options: options)
+  root_dir = test_files_path(klass)
+  device_config = {
+    ip: "111.222.333",
+    user: "user",
+    password: "password",
+  }
+  config.instance_variable_set(:@parsed, {root_dir: root_dir, device_config: device_config, init_params: {}})
+  config
+end
 
 def test_files_path(klass)
   klass = klass.to_s.split("::")[1].underscore
