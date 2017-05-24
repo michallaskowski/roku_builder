@@ -195,8 +195,17 @@ end
 
 begin
   parser.parse!
-  RokuBuilder::Controller.run(options: options)
 rescue StandardError => e
   RokuBuilder::Logger.instance.fatal e.message
+end
+
+if options[:debug]
+  RokuBuilder::Controller.run(options: options)
+else
+  begin
+    RokuBuilder::Controller.run(options: options)
+  rescue StandardError => e
+    RokuBuilder::Logger.instance.fatal e.message
+  end
 end
 
