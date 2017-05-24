@@ -35,6 +35,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "minitest",          "~> 5.10"
   spec.add_development_dependency "minitest-autotest", "~> 1.0"
   spec.add_development_dependency "minitest-server",   "~> 1.0"
+  spec.add_development_dependency "minitest-utils",    "~> 0.3"
   spec.add_development_dependency "webmock",           "~> 3.0"
   spec.add_development_dependency "simplecov",         "~> 0.12"
   spec.add_development_dependency "coveralls",         "~> 0.8"

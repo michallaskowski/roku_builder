@@ -12,7 +12,9 @@ SimpleCov.start
 require "byebug"
 require "roku_builder"
 require "minitest/autorun"
+require "minitest/utils"
 require "webmock/minitest"
+
 
 RokuBuilder::Logger.set_testing
 WebMock.disable_net_connect!
