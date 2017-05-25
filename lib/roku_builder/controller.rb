@@ -71,20 +71,20 @@ module RokuBuilder
       if options.device_command?
         ping = Net::Ping::External.new
         host = config.parsed[:device_config][:ip]
-        return GOOD_DEVICE if ping.ping? host, 1, 0.2, 1
-        return BAD_DEVICE if options[:device_given]
+        return if ping.ping? host, 1, 0.2, 1
+        raise DeviceError, "Device not online" if options[:device_given]
         config.raw[:devices].each_pair {|key, value|
           unless key == :default
             host = value[:ip]
             if ping.ping? host, 1, 0.2, 1
               config.parsed[:device_config] = value
-              return CHANGED_DEVICE
+              Logger.instance.warn("Default device offline, choosing Alternate")
+              return
             end
           end
         }
-        return NO_DEVICES
+        raise DeviceError, "No devices found"
       end
-      return GOOD_DEVICE
     end
     private_class_method :check_devices
 

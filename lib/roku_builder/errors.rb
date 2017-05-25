@@ -12,4 +12,7 @@ module RokuBuilder
 
   class ManifestError < StandardError
   end
+
+  class DeviceError < StandardError
+  end
 end
