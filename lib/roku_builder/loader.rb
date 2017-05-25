@@ -11,7 +11,6 @@ module RokuBuilder
     # @return [String] Build version on success, nil otherwise
     def sideload(update_manifest: false, content: nil, infile: nil, out_file: nil)
       Navigator.new(config: @config).nav(commands: [:home])
-      result = FAILED_SIDELOAD
       build_version = nil
       out = out_file
       if infile
@@ -37,9 +36,12 @@ module RokuBuilder
       response = conn.post path, payload
       # Cleanup
       File.delete(out) if infile.nil? and out_file.nil?
-      result = SUCCESS if response.status==200 and response.body=~/Install Success/
-      result = IDENTICAL_SIDELOAD if response.status==200 and response.body=~/Identical to previous version/
-      [result, build_version]
+      if response.status==200 and response.body=~/Identical to previous version/
+        @logger.warn("Sideload identival to previous version")
+      elsif not (response.status==200 and response.body=~/Install Success/)
+        raise ExecutionError, "Failed Sideloading"
+      end
+      build_version
     end
 
 
@@ -87,10 +89,9 @@ module RokuBuilder
         archive: ""
       }
       response = conn.post path, payload
-      if response.status == 200 and response.body =~ /Install Success/
-        return true
+      unless response.status == 200 and response.body =~ /Install Success/
+        raise ExecutionError, "Failed Unloading"
       end
-      return false
     end
 
     private

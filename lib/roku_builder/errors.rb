@@ -15,4 +15,7 @@ module RokuBuilder
 
   class DeviceError < StandardError
   end
+
+  class ExecutionError < StandardError
+  end
 end

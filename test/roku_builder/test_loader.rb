@@ -36,10 +36,9 @@ module RokuBuilder
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      result, build_version = loader.sideload(**loader_config)
+      build_version = loader.sideload(**loader_config)
 
       assert_equal "010101.1", build_version
-      assert_equal SUCCESS, result
     end
     def test_loader_sideload_infile
       infile = File.join(@root_dir, "test.zip")
@@ -54,10 +53,9 @@ module RokuBuilder
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      result, build_version = loader.sideload(**loader_config)
+      build_version = loader.sideload(**loader_config)
 
       assert_equal "010101.1", build_version
-      assert_equal SUCCESS, result
     end
     def test_loader_sideload_update
       loader_config = {
@@ -67,17 +65,16 @@ module RokuBuilder
           files: ["manifest"]
         }
       }
-      
+
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}:8060/keypress/Home").
         to_return(status: 200, body: "", headers: {}))
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      result, build_version = loader.sideload(**loader_config)
+      build_version = loader.sideload(**loader_config)
 
       assert_equal "#{Time.now.strftime("%m%d%y")}.2", build_version
-      assert_equal SUCCESS, result
 
     end
 
@@ -114,18 +111,16 @@ module RokuBuilder
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      result = loader.unload
-
-      assert result
+      loader.unload
     end
     def test_loader_unload_fail
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
         to_return(status: 200, body: "Install Failed", headers: {}))
 
       loader = Loader.new(config: @config)
-      result = loader.unload
-
-      assert !result
+      assert_raises ExecutionError do
+        loader.unload
+      end
     end
   end
 end
