@@ -32,7 +32,7 @@ module RokuBuilder
     def test_tester_runtests
       tester = Tester.new(config: @config)
 
-      @loader.expect(:sideload, [SUCCESS, ""], [@loader_config])
+      @loader.expect(:sideload, nil, [@loader_config])
       @linker.expect(:launch, nil, [{options: "RunTests:true"}])
       @connection.expect(:waitfor, nil, [/\*+\s*End testing\s*\*+/])
       @connection.expect(:puts, nil, ["cont\n"])
@@ -54,7 +54,7 @@ module RokuBuilder
       end
 
       tester = Tester.new(config: @config)
-      @loader.expect(:sideload, [SUCCESS, ""], [@loader_config])
+      @loader.expect(:sideload, nil, [@loader_config])
       @linker.expect(:launch, nil, [{options: "RunTests:true"}])
       @connection.expect(:waitfor, nil, &waitfor)
       @connection.expect(:puts, nil, ["cont\n"])

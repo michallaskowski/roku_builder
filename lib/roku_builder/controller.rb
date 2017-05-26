@@ -20,8 +20,7 @@ module RokuBuilder
       config.parse
 
       # Check devices
-      device_code = check_devices(options: options, config: config)
-      ErrorHandler.handle_device_codes(device_code: device_code, logger: Logger.instance)
+      check_devices(options: options, config: config)
 
       # Run Commands
       command_code = execute_commands(options: options, config: config)

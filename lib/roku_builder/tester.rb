@@ -33,18 +33,16 @@ module RokuBuilder
       }
       loader = Loader.new(**@device_config)
       connection = Net::Telnet.new(telnet_config)
-      code, _build_version = loader.sideload(**sideload_config)
-      if code == SUCCESS
-        @device_config[:init_params] = nil
-        linker = Linker.new(**@device_config)
-        linker.launch(options: "RunTests:true")
+      loader.sideload(**sideload_config)
+      @device_config[:init_params] = nil
+      linker = Linker.new(**@device_config)
+      linker.launch(options: "RunTests:true")
 
-        connection.waitfor(@end_reg) do |txt|
-          handle_text(txt: txt)
-        end
-        print_logs
-        connection.puts("cont\n")
+      connection.waitfor(@end_reg) do |txt|
+        handle_text(txt: txt)
       end
+      print_logs
+      connection.puts("cont\n")
     end
 
     private
