@@ -10,8 +10,9 @@ module RokuBuilder
     end
 
     def test_scripter_print_bad_attr
-      code = Scripter.print(attribute: :bad, config: @config)
-      assert_equal BAD_PRINT_ATTRIBUTE, code
+      assert_raises ExecutionError do
+        Scripter.print(attribute: :bad, config: @config)
+      end
     end
 
     def test_scripter_print_config_root_dir
@@ -23,10 +24,9 @@ module RokuBuilder
         call_count+=1
       }
       Scripter.stub(:printf, fake_print) do
-        code = Scripter.print(attribute: :root_dir, config: @config)
+        Scripter.print(attribute: :root_dir, config: @config)
       end
       assert_equal 1, call_count
-      assert_equal SUCCESS, code
     end
     def test_scripter_print_config_app_name
       call_count = 0
@@ -37,10 +37,9 @@ module RokuBuilder
         call_count+=1
       }
       Scripter.stub(:printf, fake_print) do
-        code = Scripter.print(attribute: :app_name, config: @config)
+        Scripter.print(attribute: :app_name, config: @config)
       end
       assert_equal 1, call_count
-      assert_equal SUCCESS, code
     end
 
     def test_scripter_print_manifest_title
@@ -52,10 +51,9 @@ module RokuBuilder
         call_count+=1
       }
       Scripter.stub(:printf, fake_print) do
-        code = Scripter.print(attribute: :title, config: @config)
+        Scripter.print(attribute: :title, config: @config)
       end
       assert_equal 1, call_count
-      assert_equal SUCCESS, code
     end
 
     def test_scripter_print_manifest_build_version
@@ -67,10 +65,9 @@ module RokuBuilder
         call_count+=1
       }
       Scripter.stub(:printf, fake_print) do
-        code = Scripter.print(attribute: :build_version, config: @config)
+        Scripter.print(attribute: :build_version, config: @config)
       end
       assert_equal 1, call_count
-      assert_equal SUCCESS, code
     end
 
     def test_scripter_print_manifest_app_version
@@ -83,10 +80,9 @@ module RokuBuilder
         call_count+=1
       }
       Scripter.stub(:printf, fake_print) do
-        code = Scripter.print(attribute: :app_version, config: @config)
+        Scripter.print(attribute: :app_version, config: @config)
       end
       assert_equal 1, call_count
-      assert_equal SUCCESS, code
     end
   end
 end

@@ -14,7 +14,7 @@ module RokuBuilder
       ]
 
       unless attributes.include? attribute
-        return BAD_PRINT_ATTRIBUTE
+        raise ExecutionError, "Unknown attribute: #{attribute}"
       end
 
       manifest = Manifest.new(config: config)
@@ -33,7 +33,6 @@ module RokuBuilder
         minor = manifest.minor_version
         printf "%s.%s", major, minor
       end
-      SUCCESS
     end
   end
 end
