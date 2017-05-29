@@ -176,7 +176,7 @@ module RokuBuilder
     # Apply the changes in the options string to the config object
     def apply_options
       state = build_edit_state
-      changes = Util.options_parse(options: @options[:edit_params])
+      changes = RokuBuilder.options_parse(options: @options[:edit_params])
       changes.each {|key,value|
         if [:ip, :user, :password].include?(key)
           @config[:devices][state[:device]][key] = value

@@ -37,7 +37,7 @@ module RokuBuilder
           @stage_success = false
         end
       when :script
-        Controller.system(command: @key[:stage])
+        RokuBuilder.system(command: @key[:stage])
       end
       @stage_success
     end
@@ -59,7 +59,7 @@ module RokuBuilder
           unstage_success = false
         end
       when :script
-        Controller.system(command: @key[:unstage])  if @key[:unstage]
+        RokuBuilder.system(command: @key[:unstage])  if @key[:unstage]
       end
       Dir.chdir(@orginal_directory) unless @root_dir == @orginal_directory
       unstage_success

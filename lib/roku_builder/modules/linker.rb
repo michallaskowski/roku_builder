@@ -12,7 +12,7 @@ module RokuBuilder
     # @note Any options will be accepted and sent to the app
     def launch(options: nil, app_id: "dev")
       path = "/launch/#{app_id}"
-      payload = Util.options_parse(options: options)
+      payload = RokuBuilder.options_parse(options: options)
 
       unless payload.keys.count > 0
         @logger.warn "No options sent to launched app"

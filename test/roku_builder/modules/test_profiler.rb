@@ -1,6 +1,6 @@
 # ********** Copyright Viacom, Inc. Apache 2.0 **********
 
-require_relative "test_helper.rb"
+require_relative "../test_helper.rb"
 
 module RokuBuilder
   class ProfilerTest < Minitest::Test

@@ -8,8 +8,8 @@ module RokuBuilder
   class Tester < Util
 
     # Initialize starting and ending regular expressions
-    def init(root_dir:)
-      @root_dir = root_dir
+    def init()
+      @root_dir = @config.root_dir
       @end_reg = /\*+\s*End testing\s*\*+/
       @start_reg = /\*+\s*Start testing\s*\*+/
       @test_logger = ::Logger.new(STDOUT)
@@ -28,14 +28,10 @@ module RokuBuilder
         'Port' => 8085
       }
 
-      @device_config[:init_params] = {
-        root_dir: @root_dir
-      }
-      loader = Loader.new(**@device_config)
+      loader = Loader.new(config: @config)
       connection = Net::Telnet.new(telnet_config)
       loader.sideload(**sideload_config)
-      @device_config[:init_params] = nil
-      linker = Linker.new(**@device_config)
+      linker = Linker.new(config: @config)
       linker.launch(options: "RunTests:true")
 
       connection.waitfor(@end_reg) do |txt|

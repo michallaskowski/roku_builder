@@ -32,7 +32,9 @@ def test_files_path(klass)
 end
 
 def build_options(options = {screens: true})
-  RokuBuilder::Options.new(options: options)
+  options = RokuBuilder::Options.new(options: options)
+  options.validate
+  options
 end
 
 def good_config(klass=nil)

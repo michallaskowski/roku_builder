@@ -4,6 +4,80 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class OptionsTest < Minitest::Test
+    def test_options_initialize_no_params
+      count = 0
+      parse_stub = lambda{ count+= 1; {screens: true} }
+      options = Options.allocate
+      options.stub(:parse, parse_stub) do
+        options.send(:initialize)
+      end
+      assert_equal 1, count
+    end
+    def test_options_initialize_params
+      count = 0
+      parse_stub = lambda{ count+= 1; {screens: true} }
+      options = Options.allocate
+      options.stub(:parse, parse_stub) do
+        options.send(:initialize, {options: {screens: true}})
+      end
+      assert_equal 0, count
+    end
+    def test_options_parse
+      parser = Minitest::Mock.new()
+      options = Options.allocate
+      parser.expect(:parse!, nil)
+      options.stub(:build_parser, parser) do
+        options.stub(:validate_parser, nil) do
+          options.send(:parse)
+        end
+      end
+      parser.verify
+    end
+    def test_options_parse_validate_options_good
+      Array.class_eval { alias_method :each_option, :each  }
+      parser = Minitest::Mock.new()
+      options = Options.allocate
+      parser.expect(:instance_variable_get, build_stack, [:@stack])
+
+      parser.expect(:parse!, nil)
+      options.stub(:build_parser, parser) do
+        options.send(:parse)
+      end
+      parser.verify
+      Array.class_eval { remove_method :each_option  }
+    end
+    def test_options_parse_validate_options_good
+      Array.class_eval { alias_method :each_option, :each  }
+      parser = Minitest::Mock.new()
+      options = Options.allocate
+      parser.expect(:instance_variable_get, build_stack(false), [:@stack])
+
+      options.stub(:build_parser, parser) do
+        assert_raises(ImplementationError) do
+          options.send(:parse)
+        end
+      end
+      parser.verify
+      Array.class_eval { remove_method :each_option  }
+    end
+    def build_stack(good = true)
+      optionsA = Minitest::Mock.new()
+      optionsB = Minitest::Mock.new()
+      list = [optionsA, optionsB]
+      stack = [list]
+      2.times do
+        optionsA.expect(:short, "a")
+        optionsA.expect(:long, "aOption")
+        if good
+          optionsB.expect(:short, "b")
+          optionsB.expect(:long, "bOption")
+        else
+          optionsB.expect(:short, "a")
+          optionsB.expect(:long, "aOption")
+        end
+      end
+      stack
+    end
     def test_options_validate_extra_commands
       options = {
         sideload: true,

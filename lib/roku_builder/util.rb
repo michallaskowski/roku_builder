@@ -1,8 +1,8 @@
-# ********** Copyright Viacom, Inc. Apache 2.0 **********
+ # ********** Copyright Viacom, Inc. Apache 2.0 **********
 
 module RokuBuilder
 
-  # Super class for device utilities
+  # Super class for modules
   # This class defines a common initializer and allows subclasses
   # to define their own secondary initializer
   class Util
@@ -12,22 +12,15 @@ module RokuBuilder
     def initialize(config: )
       @logger = Logger.instance
       @config = config
-      @roku_ip_address = @config.parsed[:device_config][:ip]
-      @dev_username = @config.parsed[:device_config][:user]
-      @dev_password = @config.parsed[:device_config][:password]
-      @device_config = {
-        ip: @roku_ip_address,
-        user: @dev_username,
-        password: @dev_password
-      }
+      @roku_ip_address = @config.device_config[:ip]
+      @dev_username = @config.device_config[:user]
+      @dev_password = @config.device_config[:password]
       @url = "http://#{@roku_ip_address}"
       key = self.class.to_s.split("::")[-1].underscore.to_sym
-      if @config.parsed[:init_params][key]
-        init(**@config.parsed[:init_params][key])
-      else
-        init
-      end
+      init
     end
+
+    private
 
     # Second initializer to be overwriten
     def init
@@ -56,21 +49,6 @@ module RokuBuilder
         f.request :url_encoded
         f.adapter Faraday.default_adapter
       end
-    end
-
-    # Parses a string into and options hash
-    # @param options [String] string of options in the format "a:b, c:d"
-    # @return [Hash] Options hash generated
-    def self.options_parse(options:)
-      parsed = {}
-      opts = options.split(/,\s*/)
-      opts.each do |opt|
-        opt = opt.split(":")
-        key = opt.shift.to_sym
-        value = opt.join(":")
-        parsed[key] = value
-      end
-      parsed
     end
   end
 end

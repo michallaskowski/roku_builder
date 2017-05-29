@@ -24,11 +24,9 @@ module RokuBuilder
           io.puts "  print \"Load\""
           io.puts "end sub"
         end
-        @device_config[:init_params] = {root_dir: dir}
-        loader = Loader.new(**@device_config)
+        loader = Loader.new(config: @config)
         loader.sideload()
-        @device_config.delete(:init_params)
-        packager = Packager.new(**@device_config)
+        packager = Packager.new(config: @config)
         packager.package(app_name_version: "key_"+dev_id, out_file: out_file, password: password)
         @logger.unknown("Keyed PKG: "+out_file)
       }

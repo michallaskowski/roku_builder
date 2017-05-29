@@ -18,4 +18,7 @@ module RokuBuilder
 
   class ExecutionError < StandardError
   end
+
+  class ImplementationError < StandardError
+  end
 end

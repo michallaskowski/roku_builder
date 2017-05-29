@@ -198,7 +198,7 @@ module RokuBuilder
         key: {stage: "stage_script", unstage: "unstage_script"},
         root_dir: root_dir
       }
-      Controller.stub(:system, nil) do
+      RokuBuilder.stub(:system, nil) do
         stager = Stager.new(**stager_config)
         assert stager.stage
         assert stager.unstage

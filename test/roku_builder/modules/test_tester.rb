@@ -1,5 +1,5 @@
 # ********** Copyright Viacom, Inc. Apache 2.0 **********
-require_relative "test_helper.rb"
+require_relative "../test_helper.rb"
 
 module RokuBuilder
   class TesterTest < Minitest::Test
@@ -17,8 +17,7 @@ module RokuBuilder
         folders: ["source"],
         files: ["manifest"]
       }
-      init_params = {tester: {root_dir: "root/dir/path"}}
-      @config.instance_variable_set(:@parsed, {device_config: device_config, init_params: init_params})
+      @config.instance_variable_set(:@parsed, {device_config: device_config})
       @connection = Minitest::Mock.new
       @loader = Minitest::Mock.new
       @linker = Minitest::Mock.new
