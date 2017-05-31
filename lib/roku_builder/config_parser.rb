@@ -26,6 +26,7 @@ module RokuBuilder
       setup_outfile
       setup_project_config
       setup_stage_config
+      setup_key_config
       setup_root_dir
       # To be removed
       setup_sideload_config
@@ -126,8 +127,8 @@ module RokuBuilder
       if @options[:current]
         stub_project_config_for_current
       elsif  project_required
-        @parsed[:project_config] = @config[:projects][@options[:project].to_sym]
-        raise ParseError, "Unknown Project: #{@options[:project]}" unless @parsed[:project_config]
+        @parsed[:project] = @config[:projects][@options[:project].to_sym]
+        raise ParseError, "Unknown Project: #{@options[:project]}" unless @parsed[:project]
         set_project_directory
         check_for_working
       end
@@ -136,7 +137,7 @@ module RokuBuilder
     def stub_project_config_for_current
       pwd =  Pathname.pwd.to_s
       raise ParseError, "Missing Manifest" unless File.exist?(File.join(pwd, "manifest"))
-      @parsed[:project_config] = {
+      @parsed[:project] = {
         directory: pwd,
         folders: nil,
         files: nil,
@@ -146,54 +147,24 @@ module RokuBuilder
 
     def set_project_directory
       if @config[:projects][:project_dir]
-        @parsed[:project_config][:directory] = File.join(@config[:projects][:project_dir], @parsed[:project_config][:directory])
+        @parsed[:project][:directory] = File.join(@config[:projects][:project_dir], @parsed[:project][:directory])
       end
-      unless Dir.exist?(@parsed[:project_config][:directory])
-        raise ParseError, "Missing project dirtectory: #{@parsed[:project_config][:dirtectory]}"
+      unless Dir.exist?(@parsed[:project][:directory])
+        raise ParseError, "Missing project dirtectory: #{@parsed[:project][:dirtectory]}"
       end
     end
 
     def check_for_working
-      @parsed[:project_config][:stage_method] = :working if @options[:working]
+      @parsed[:project][:stage_method] = :working if @options[:working]
     end
 
 
     def setup_stage_config
-      setup_mininal_stage_configs
-      setup_project_stage_config if project_required
-    end
-
-    def setup_mininal_stage_configs
-      @parsed[:stage_config] = {}
-      @parsed[:stage_config][:method] = ([:in, :current] & @options.keys).first
-      @parsed[:stage] = @options[:stage].to_sym if @options[:stage]
-    end
-
-    def setup_project_stage_config
-      @parsed[:stage] ||= @parsed[:project_config][:stages].keys[0].to_sym
-      @parsed[:stage_config][:root_dir] = @parsed[:project_config][:directory]
-      raise ParseError, "Unknown Stage: #{@parsed[:stage]}" unless @parsed[:project_config][:stages][@parsed[:stage]]
-      setup_staging_method
-      setup_staging_key
-    end
-
-    def setup_staging_method
-      @parsed[:stage_config][:method] = @parsed[:project_config][:stage_method]
-      unless [:git, :script, :current, :working].include? @parsed[:stage_config][:method]
-        raise ParseError, "Unknown Stage Method: #{@parsed[:stage_config][:method]}"
-      end
-    end
-
-    def setup_staging_key
-      case @parsed[:stage_config][:method]
-      when :git
-        if @options[:ref]
-          @parsed[:stage_config][:key] = @options[:ref]
-        else
-          @parsed[:stage_config][:key] = @parsed[:project_config][:stages][@parsed[:stage]][:branch]
-        end
-      when :script
-        @parsed[:stage_config][:key] = @parsed[:project_config][:stages][@parsed[:stage]][:script]
+      if project_required
+        stage = @options[:stage].to_sym if @options[:stage]
+        stage ||= @parsed[:project][:stages].keys[0].to_sym
+        raise ParseError, "Unknown Stage: #{stage}" unless @parsed[:project][:stages][stage]
+        @parsed[:stage] = @parsed[:project][:stages][stage]
       end
     end
 
@@ -202,7 +173,7 @@ module RokuBuilder
     end
 
     def get_root_dir
-      root_dir = @parsed[:project_config][:directory] if @parsed[:project_config]
+      root_dir = @parsed[:project][:directory] if @parsed[:project]
       root_dir = @options[:in] if @options[:in]
       root_dir = Pathname.pwd.to_s if @options[:current]
       root_dir
@@ -222,13 +193,13 @@ module RokuBuilder
     end
 
     def setup_project_values
-      if @parsed[:project_config]
-        root_dir = @parsed[:project_config][:directory]
+      if @parsed[:project]
+        root_dir = @parsed[:project][:directory]
         content = {
-          folders: @parsed[:project_config][:folders],
-          files: @parsed[:project_config][:files],
+          folders: @parsed[:project][:folders],
+          files: @parsed[:project][:files],
         }
-        content[:excludes] = @parsed[:project_config][:excludes] if add_excludes?
+        content[:excludes] = @parsed[:project][:excludes] if add_excludes?
         [root_dir, content]
       else
         [nil, nil]
@@ -240,7 +211,6 @@ module RokuBuilder
     end
 
     def setup_package_config
-      setup_key_config if @options[:package] or @options[:key]
       if @options[:package]
         setup_package_config_hashes
         setup_package_config_out_files
@@ -248,8 +218,11 @@ module RokuBuilder
     end
 
     def setup_key_config
-      @parsed[:key] = @parsed[:project_config][:stages][@parsed[:stage]][:key]
-      get_global_key_config if @parsed[:key].class == String
+      if @parsed[:stage]
+        @parsed[:key] = @parsed[:stage][:key]
+        get_global_key_config if @parsed[:key].class == String
+        test_key_file
+      end
     end
 
     def get_global_key_config
@@ -258,6 +231,8 @@ module RokuBuilder
       if @config[:keys][:key_dir]
         @parsed[:key][:keyed_pkg] = File.join(@config[:keys][:key_dir], @parsed[:key][:keyed_pkg])
       end
+    end
+    def test_key_file
       unless File.exist?(@parsed[:key][:keyed_pkg])
         raise ParseError, "Bad key file: #{@parsed[:key][:keyed_pkg]}"
       end
@@ -266,7 +241,7 @@ module RokuBuilder
     def setup_package_config_hashes
       @parsed[:package_config] = {
         password: @parsed[:key][:password],
-        app_name_version: "#{@parsed[:project_config][:app_name]} - #{@parsed[:stage]}"
+        app_name_version: "#{@parsed[:project][:app_name]} - #{@parsed[:stage]}"
       }
       @parsed[:inspect_config] = {
         password: @parsed[:key][:password]

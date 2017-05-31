@@ -5,8 +5,12 @@ require_relative "test_helper.rb"
 module RokuBuilder
   class RokuBuilderTest < Minitest::Test
     def setup
+      RokuBuilder.class_variable_set(:@@plugins, {})
       @ping = Minitest::Mock.new
-      @options = build_options({sideload: true, device_given: false, working: true})
+      @options = build_options({validate: true, device_given: false, working: true})
+      @options.define_singleton_method(:device_commands){
+        [:validate]
+      }
       @raw = {
         devices: {
         a: {ip: "2.2.2.2"},
@@ -22,6 +26,7 @@ module RokuBuilder
     end
     def teardown
       @ping.verify
+      RokuBuilder.class_variable_set(:@@plugins, {})
     end
 
     def test_roku_builder_check_devices_good
@@ -59,7 +64,7 @@ module RokuBuilder
     end
     def test_roku_builder_check_devices
       Net::Ping::External.stub(:new, @ping) do
-        @options = build_options({build: true, device_given: false, working: true})
+        @options = build_options({validate: true, device_given: false, working: true})
         RokuBuilder.check_devices(options: @options, config: @config)
       end
     end
@@ -96,6 +101,64 @@ module RokuBuilder
       refute_nil options[:d]
       assert_equal "b:c", options[:a]
       assert_equal "e:f", options[:d]
+    end
+    def test_roku_builder_plugins_empty
+      RokuBuilder.process_plugins
+      assert_equal Hash, RokuBuilder.plugins.class
+      assert_equal 0, RokuBuilder.plugins.count
+    end
+    def test_roku_builder_plugins_empty_no_setup
+      assert_equal Hash, RokuBuilder.plugins.class
+      assert_equal 0, RokuBuilder.plugins.count
+    end
+    def test_roku_builder_plugins_registered
+      RokuBuilder.register_plugin(klass: TestPlugin, name: "test")
+      RokuBuilder.process_plugins
+      assert_equal Hash, RokuBuilder.plugins.class
+      assert_equal 1, RokuBuilder.plugins.count
+      assert_equal TestPlugin, RokuBuilder.plugins["test"]
+    end
+    def test_roku_builder_plugins_duplicate_classes
+      RokuBuilder.register_plugin(klass: TestPlugin, name: "test")
+      RokuBuilder.register_plugin(klass: TestPlugin, name: "test2")
+      assert_raises ImplementationError do
+        RokuBuilder.process_plugins
+      end
+    end
+    def test_roku_builder_plugins_duplicate_names
+      RokuBuilder.register_plugin(klass: TestPlugin, name: "test")
+      assert_raises ImplementationError do
+        RokuBuilder.register_plugin(klass: TestPlugin2, name: "test")
+      end
+    end
+    def test_roku_builder_plugins_duplicate_names
+      RokuBuilder.register_plugin(klass: TestPlugin, name: "test")
+      assert_raises ImplementationError do
+        RokuBuilder.register_plugin(klass: TestPlugin2, name: "test")
+      end
+    end
+    def test_roku_builder_plugins_dependencies
+      RokuBuilder.register_plugin(klass: TestPlugin, name: "test")
+      RokuBuilder.register_plugin(klass: TestPlugin3, name: "test3")
+      RokuBuilder.process_plugins
+    end
+    def test_roku_builder_plugins_dependencies
+      RokuBuilder.register_plugin(klass: TestPlugin3, name: "test3")
+      assert_raises ImplementationError do
+        RokuBuilder.process_plugins
+      end
+    end
+  end
+  class TestPlugin
+    extend Plugin
+  end
+  class TestPlugin2
+    extend Plugin
+  end
+  class TestPlugin3
+    extend Plugin
+    def self.dependencies
+      ["test"]
     end
   end
 end

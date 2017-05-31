@@ -31,17 +31,13 @@ Dir.glob(File.join(File.dirname(__FILE__), "roku_builder", "*.rb")).each do |pat
   file = "roku_builder/"+File.basename(path, ".rb")
   require file
 end
-Dir.glob(File.join(File.dirname(__FILE__), "roku_builder", "modules", "*.rb")).each do |path|
-  file = "roku_builder/modules/"+File.basename(path, ".rb")
-  require file
-end
 
 module RokuBuilder
   # Run the builder
   # @param options [Hash] The options hash
   def self.run
 
-    #load modules
+    setup_plugin
 
     options = Options.new
 
@@ -52,6 +48,40 @@ module RokuBuilder
     check_devices(options: options, config: config)
 
     execute_command(options: options, config: config)
+  end
+
+  def self.plugins
+    @@plugins ||= {}
+  end
+
+  def self.register_plugin(klass:, name:)
+    @@plugins ||= {}
+    raise ImplementationError, "Duplicate plugin names" if @@plugins[name]
+    @@plugins[name] = klass
+  end
+
+  def self.setup_plugins
+    load_plugins
+    process_plugins
+  end
+
+  def self.load_plugins
+    Dir.glob(File.join(File.dirname(__FILE__), "roku_builder", "plugins", "*.rb")).each do |path|
+      file = "roku_builder/plugins/"+File.basename(path, ".rb")
+      require file
+    end
+  end
+
+  def self.process_plugins
+    @@plugins ||= {}
+    unless @@plugins.count == @@plugins.values.uniq.count
+      raise ImplementationError, "Duplicate plugin classes"
+    end
+    @@plugins.each_value do |klass|
+      klass.dependencies.each do |name|
+        raise ImplementationError, "Missing dependency: #{name}" unless @@plugins[name]
+      end
+    end
   end
 
   def self.initialize_logger(options:)

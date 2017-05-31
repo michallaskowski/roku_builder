@@ -93,6 +93,7 @@ module RokuBuilder
     end
 
     def test_config_update_package
+      skip("to be moved to package module")
       options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), package: true, stage: :production, set_stage: true})
       config = Config.new(options: options)
       config.load
@@ -105,6 +106,7 @@ module RokuBuilder
     end
 
     def test_config_update_build
+      skip("to be moved to build module")
       options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), build: true, stage: :production, set_stage: true})
       config = Config.new(options: options)
       config.load
@@ -115,6 +117,7 @@ module RokuBuilder
     end
 
     def test_config_update_sideload
+      skip("to be moved to sideload module")
       options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), sideload: true, stage: :production, set_stage: true, out: "/tmp2"})
       config = Config.new(options: options)
       config.load

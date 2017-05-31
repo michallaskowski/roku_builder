@@ -4,6 +4,7 @@ module RokuBuilder
   class Options < Hash
     def initialize(options: nil)
       @logger = Logger.instance
+      setup_plugin_commands
       options ||= parse
       merge!(options)
     end
@@ -11,7 +12,6 @@ module RokuBuilder
     def validate
       validate_commands
       validate_sources
-      validate_combinations
       validate_deprivated
     end
 
@@ -37,11 +37,25 @@ module RokuBuilder
 
     private
 
+    def setup_plugin_commands
+      RokuBuilder.plugins.each_value do |plugin|
+        plugin.commands.each do |command, attributes|
+          commands << command
+          [:device, :source, :exclude].each do |type|
+            if attributes[type]
+              send("#{type}_commands".to_sym) << command
+            end
+          end
+        end
+      end
+    end
+
     def parse
       options = {}
       options[:config] = '~/.roku_config.json'
       options[:update_manifest] = false
       parser = build_parser(options: options)
+      add_plugin_options(parser: parser, options:options)
       validate_parser(parser: parser)
       begin
         parser.parse!
@@ -56,16 +70,16 @@ module RokuBuilder
       OptionParser.new do |opts|
         opts.banner = "Usage: roku <command> [options]"
         opts.separator "Core Comamnads:"
-        opts.on("--configure", "Command: Copy base configuration file to the --config location. Default: '~/.roku_config.json'") do
+        opts.on("--configure", "Copy base configuration file to the --config location. Default: '~/.roku_config.json'") do
           options[:configure] = true
         end
-        opts.on("--validate", "Command: Validate configuration'") do
+        opts.on("--validate", "Validate configuration'") do
           options[:validate] = true
         end
-        opts.on("--do-stage", "Command: Run the stager. Used for scripting. Always run --do-unstage after") do
+        opts.on("--do-stage", "Run the stager. Used for scripting. Always run --do-unstage after") do
           options[:dostage] = true
         end
-        opts.on("--do-unstage", "Command: Run the unstager. Used for scripting. Always run --do-script first") do
+        opts.on("--do-unstage", "Run the unstager. Used for scripting. Always run --do-script first") do
           options[:dounstage] = true
         end
         opts.separator ""
@@ -117,7 +131,13 @@ module RokuBuilder
       end
     end
 
-    def validate_parser(parser: )
+    def add_plugin_options(parser:, options:)
+      RokuBuilder.plugins.each_value do |plugin|
+        plugin.parse_options(options_parser: parser, options: options)
+      end
+    end
+
+    def validate_parser(parser:)
       short = []
       long = []
       stack = parser.instance_variable_get(:@stack)
@@ -149,16 +169,6 @@ module RokuBuilder
       end
     end
 
-    def validate_combinations
-      all_sources = keys & sources
-      if all_sources.include?(:current) and not (self[:build] or self[:sideload])
-        raise InvalidOptions, "Current source onle works for build or sideload"
-      end
-      if self[:in] and not self[:sideload]
-        raise InvalidOptions, "In source only works for sideloading"
-      end
-    end
-
     def validate_deprivated
       depricated = keys & depricated_options.keys
       if depricated.count > 0
@@ -171,16 +181,18 @@ module RokuBuilder
     # List of command options
     # @return [Array<Symbol>] List of command symbols that can be used in the options hash
     def commands
-      [:sideload, :package, :test, :deeplink,:configure, :validate, :delete,
-        :navigate, :navigator, :text, :build, :monitor, :update, :screencapture,
-        :key, :genkey, :screen, :screens, :applist, :print, :profile, :dostage,
-        :dounstage]
+      @commands ||= [:configure, :validate, :dostage, :dounstage]
+        #[:sideload, :package, :test, :deeplink,:configure, :validate, :delete,
+        #:navigate, :navigator, :text, :build, :monitor, :update, :screencapture,
+        #:key, :genkey, :screen, :screens, :applist, :print, :profile, :dostage,
+        #:dounstage]
     end
 
     # List of depricated options
     # @return [Hash] Hash of depricated options and the warning message for each
     def depricated_options
-      {deeplink_depricated: "-L and --deeplink are depricated. Use -o or --deeplink-options." }
+      @depricated_options ||= {}
+      #{deeplink_depricated: "-L and --deeplink are depricated. Use -o or --deeplink-options." }
     end
 
     # List of source options
@@ -192,20 +204,23 @@ module RokuBuilder
     # List of commands requiring a source option
     # @return [Array<Symbol>] List of command symbols that require a source in the options hash
     def source_commands
-      [:sideload, :package, :test, :build, :key, :update, :print]
+      @source_commands ||= []
+      #[:sideload, :package, :test, :build, :key, :update, :print]
     end
 
     # List of commands the activate the exclude files
     # @return [Array<Symbol] List of commands the will activate the exclude files lists
     def exclude_commands
-      [:build, :package]
+      @exclude_commands ||= []
+      #[:build, :package]
     end
 
     # List of commands that require a device
     # @return [Array<Symbol>] List of commands that require a device
     def device_commands
-      [:sideload, :package, :test, :deeplink, :delete, :navigate, :navigator,
-        :text, :monitor, :screencapture, :applist, :profile, :key, :genkey ]
+      @device_commands ||= []
+      #[:sideload, :package, :test, :deeplink, :delete, :navigate, :navigator,
+      #  :text, :monitor, :screencapture, :applist, :profile, :key, :genkey ]
     end
   end
 end

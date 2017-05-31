@@ -195,5 +195,19 @@ module RokuBuilder
       validator = ConfigValidator.new(config: config)
       assert_equal [21], validator.instance_variable_get(:@codes)
     end
+
+    def test_config_manager_validate_project_stage_method_bad
+      config = good_config
+      config[:projects][:project2][:stage_method] = :bad
+      validator = ConfigValidator.new(config: config)
+      assert_equal [18], validator.instance_variable_get(:@codes)
+    end
+
+    def test_config_manager_validate_project_stage_method_missing
+      config = good_config
+      config[:projects][:project2][:stage_method] = nil
+      validator = ConfigValidator.new(config: config)
+      assert_equal [23], validator.instance_variable_get(:@codes)
+    end
   end
 end

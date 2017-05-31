@@ -6,9 +6,10 @@ module RokuBuilder
   class ConfigParserTest < Minitest::Test
     def test_manifest_config
       options = build_options({
-        sideload: true,
+        validate: true,
         working: true
       })
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       configs = ConfigParser.parse(options: options, config: config)
 
@@ -19,34 +20,33 @@ module RokuBuilder
     def test_manifest_config_in
       options = build_options({
         in: "/dev/null/infile",
-        sideload: true
+        validate: true
       })
       config = good_config
       configs = ConfigParser.parse(options: options, config: config)
 
       assert_equal Hash, config.class
       assert_equal "/dev/null/infile", configs[:root_dir]
-      assert_equal :in, configs[:stage_config][:method]
     end
 
     def test_manifest_config_in_expand
       options = build_options({
         in: "./infile",
-        sideload: true
+        validate: true
       })
       config = good_config
       configs = ConfigParser.parse(options: options, config: config)
 
       assert_equal Hash, config.class
       assert_equal File.join(Dir.pwd, "infile"), configs[:root_dir]
-      assert_equal :in, configs[:stage_config][:method]
     end
 
     def test_manifest_config_current
       options = build_options({
         current: true,
-        sideload: true
+        validate: true
       })
+      options.define_singleton_method(:source_commands){[:validate]}
       configs = nil
       config = good_config
       Pathname.stub(:pwd, "/dev/null/infile") do
@@ -57,12 +57,12 @@ module RokuBuilder
 
       assert_equal Hash, config.class
       assert_equal "/dev/null/infile", configs[:root_dir]
-      assert_equal :current, configs[:stage_config][:method]
     end
 
     def test_setup_project_config_bad_project
       config = good_config
-      options = build_options({sideload: true, project: :project3, set_stage: true})
+      options = build_options({validate: true, project: :project3, set_stage: true})
+      options.define_singleton_method(:source_commands) {[:validate]}
       assert_raises ParseError do
         File.stub(:exist?, true) do
           ConfigParser.parse(options: options, config: config)
@@ -71,13 +71,13 @@ module RokuBuilder
     end
 
     def test_setup_project_config_current
-      options = build_options({ sideload: true, current: true })
+      options = build_options({ validate: true, current: true })
       config = good_config
       configs = nil
       File.stub(:exist?, true) do
         configs = ConfigParser.parse(options: options, config: config)
       end
-      project = configs[:project_config]
+      project = configs[:project]
       assert_equal Pathname.pwd.to_s, project[:directory]
       assert_equal :current, project[:stage_method]
       assert_nil project[:folders]
@@ -86,7 +86,8 @@ module RokuBuilder
 
     def test_setup_project_config_good_project_dir
       config = good_config
-      options = build_options({sideload: true, project: :project1, set_stage: true})
+      options = build_options({validate: true, project: :project1, set_stage: true})
+      options.define_singleton_method(:source_commands) {[:validate]}
       File.stub(:exist?, true) do
         ConfigParser.parse(options: options, config: config)
       end
@@ -95,7 +96,8 @@ module RokuBuilder
     def test_setup_project_config_bad_project_dir
       config = good_config
       config[:projects][:project1][:directory] = "/dev/null"
-      options = build_options({sideload: true, project: :project1, working: true})
+      options = build_options({validate: true, project: :project1, working: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       assert_raises ParseError do
         File.stub(:exist?, true) do
           ConfigParser.parse(options: options, config: config)
@@ -107,7 +109,8 @@ module RokuBuilder
       config = good_config
       config[:projects][:project_dir] = "/tmp"
       config[:projects][:project1][:directory] = "bad"
-      options = build_options({sideload: true, project: :project1, working: true})
+      options = build_options({validate: true, project: :project1, working: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       assert_raises ParseError do
         File.stub(:exist?, true) do
           ConfigParser.parse(options: options, config: config)
@@ -119,39 +122,8 @@ module RokuBuilder
       config = good_config
       config[:projects][:project_dir] = "/bad"
       config[:projects][:project1][:directory] = "good"
-      options = build_options({sideload: true, project: :project1, set_stage: true})
-      assert_raises ParseError do
-        File.stub(:exist?, true) do
-          ConfigParser.parse(options: options, config: config)
-        end
-      end
-    end
-
-    def test_setup_stage_config_bad_stage
-      config = good_config
-      options = build_options({sideload: true, project: :project1, stage: :bad, set_stage: true})
-      assert_raises ParseError do
-        File.stub(:exist?, true) do
-          ConfigParser.parse(options: options, config: config)
-        end
-      end
-    end
-
-    def test_setup_stage_config_bad_method
-      config = good_config
-      config[:projects][:project1][:stage_method] = :bad
-      options = build_options({sideload: true, project: :project1, set_stage: true})
-      assert_raises ParseError do
-        File.stub(:exist?, true) do
-          ConfigParser.parse(options: options, config: config)
-        end
-      end
-    end
-
-    def test_setup_stage_config_missing_method
-      config = good_config
-      config[:projects][:project1][:stage_method] = nil
-      options = build_options({sideload: true, project: :project1, set_stage: true})
+      options = build_options({validate: true, project: :project1, set_stage: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       assert_raises ParseError do
         File.stub(:exist?, true) do
           ConfigParser.parse(options: options, config: config)
@@ -163,34 +135,30 @@ module RokuBuilder
       config = good_config
       config[:projects][:project1][:stage_method] = :script
       config[:projects][:project1][:stages][:production][:script] = {stage: "script", unstage: "script"}
-      options = build_options({stage: "production", sideload: true, set_stage: true})
+      options = build_options({stage: "production", validate: true, set_stage: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       parsed = ConfigParser.parse(options: options, config: config)
-      assert_equal parsed[:project_config][:stages][:production][:script], config[:projects][:project1][:stages][:production][:script]
-    end
-
-    def test_setup_stage_config_git_ref
-      config = good_config
-      options = build_options({stage: "production", ref: "git-ref", sideload: true})
-      parsed = ConfigParser.parse(options: options, config: config)
-      assert_equal options[:ref], parsed[:stage_config][:key]
+      assert_equal parsed[:project][:stages][:production][:script], config[:projects][:project1][:stages][:production][:script]
     end
 
     def test_manifest_config_project_select
-      options = build_options({ sideload: true, working: true })
+      options = build_options({ validate: true, working: true })
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       configs = nil
       Pathname.stub(:pwd, Pathname.new("/dev/nuller")) do
         configs = ConfigParser.parse(options: options, config: config)
       end
       assert_equal Hash, config.class
-      assert_equal "/tmp", configs[:project_config][:directory]
+      assert_equal "/tmp", configs[:project][:directory]
     end
 
     def test_manifest_config_project_directory
       options = build_options({
-        sideload: true,
+        validate: true,
         working: true
       })
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       config[:projects][:project_dir] = "/tmp"
       config[:projects][:project1][:directory] = "project1"
@@ -203,11 +171,12 @@ module RokuBuilder
       end
 
       assert_equal Hash, config.class
-      assert_equal "/tmp/project1", configs[:project_config][:directory]
+      assert_equal "/tmp/project1", configs[:project][:directory]
     end
 
     def test_manifest_config_project_directory_select
-      options = build_options({sideload: true, working: true})
+      options = build_options({validate: true, working: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       config[:projects][:project_dir] = "/tmp"
       config[:projects][:project1][:directory] = "project1"
@@ -221,12 +190,13 @@ module RokuBuilder
       end
 
       assert_equal Hash, config.class
-      assert_equal "/tmp/project2", configs[:project_config][:directory]
+      assert_equal "/tmp/project2", configs[:project][:directory]
     end
 
     def test_key_config_key_directory
       tmp_file = Tempfile.new("pkg")
-      options = build_options({key: true, project: :project2, set_stage: true})
+      options = build_options({validate: true, project: :project2, set_stage: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       config[:keys][:key_dir] = File.dirname(tmp_file.path)
       config[:keys][:a][:keyed_pkg] = File.basename(tmp_file.path)
@@ -240,7 +210,8 @@ module RokuBuilder
 
     def test_key_config_key_directory_bad
       tmp_file = Tempfile.new("pkg")
-      options = build_options({key: true, project: :project2, set_stage: true})
+      options = build_options({validate: true, project: :project2, set_stage: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       config[:keys][:key_dir] = "/bad"
       config[:keys][:a][:keyed_pkg] = File.basename(tmp_file.path)
@@ -252,7 +223,8 @@ module RokuBuilder
 
     def test_key_config_key_path_bad
       tmp_file = Tempfile.new("pkg")
-      options = build_options({key: true, project: :project2, set_stage: true})
+      options = build_options({validate: true, project: :project2, set_stage: true})
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       config[:keys][:key_dir] = File.dirname(tmp_file.path)
       config[:keys][:a][:keyed_pkg] = File.basename(tmp_file.path)+".bad"
@@ -263,7 +235,8 @@ module RokuBuilder
     end
 
     def test_key_config_bad_key
-      options = build_options({key: true, project: :project1, set_stage: true})
+      options = build_options({validate: true, project: :project1, set_stage: true, })
+      options.define_singleton_method(:source_commands){[:validate]}
       config = good_config
       config[:projects][:project1][:stages][:production][:key] = "bad"
 
@@ -273,6 +246,7 @@ module RokuBuilder
     end
 
     def test_setup_sideload_config
+      skip("move to module")
       config = good_config
       options = build_options({sideload: true, working: true})
       parsed = ConfigParser.parse(options: options, config: config)
@@ -289,6 +263,7 @@ module RokuBuilder
       assert_nil parsed[:sideload_config][:infile]
     end
     def test_setup_sideload_config_exclude
+      skip("move to module")
       config = good_config
       config[:projects][:project1][:excludes] = []
       options = build_options({sideload: true, working: true})
@@ -309,6 +284,7 @@ module RokuBuilder
     end
 
     def test_deeplink_app_config
+      skip("move to module")
       config = good_config
       options = build_options({deeplink: "a:b", app_id: "xxxxxx"})
       parsed = ConfigParser.parse(options: options, config: config)
@@ -318,6 +294,7 @@ module RokuBuilder
     end
 
     def test_monitor_config
+      skip("move to module")
       config = good_config
       options = build_options({monitor: "main", regexp: "^A$"})
       parsed = ConfigParser.parse(options: options, config: config)
@@ -325,6 +302,7 @@ module RokuBuilder
       assert parsed[:monitor_config][:regexp].match("A")
     end
     def test_outfile_config_default
+      skip("move to module")
       config = good_config
       options = build_options({build: true, working: true, out: nil})
       parsed = ConfigParser.parse(options: options, config: config)
@@ -336,8 +314,8 @@ module RokuBuilder
     end
     def test_outfile_config_folder
       config = good_config
-
-      options = build_options({build: true, working: true, out: "/home/user"})
+      options = build_options({validate: true, working: true, out: "/home/user"})
+      options.define_singleton_method(:source_commands){[:validate]}
       parsed = ConfigParser.parse(options: options, config: config)
       refute_nil parsed[:out]
       refute_nil parsed[:out][:folder]
@@ -347,7 +325,7 @@ module RokuBuilder
     def test_outfile_config_pkg
       config = good_config
 
-      options = build_options({build: true, working: true, out: "/home/user/file.pkg"})
+      options = build_options({validate: true, working: true, out: "/home/user/file.pkg"})
       parsed = ConfigParser.parse(options: options, config: config)
       refute_nil parsed[:out]
       refute_nil parsed[:out][:folder]
@@ -358,7 +336,7 @@ module RokuBuilder
     def test_outfile_config_zip
       config = good_config
 
-      options = build_options({build: true, working: true, out: "/home/user/file.zip"})
+      options = build_options({validate: true, working: true, out: "/home/user/file.zip"})
       parsed = ConfigParser.parse(options: options, config: config)
       refute_nil parsed[:out]
       refute_nil parsed[:out][:folder]
@@ -369,7 +347,7 @@ module RokuBuilder
     def test_outfile_config_jpg
       config = good_config
 
-      options = build_options({build: true, working: true, out: "/home/user/file.jpg"})
+      options = build_options({validate: true, working: true, out: "/home/user/file.jpg"})
       parsed = ConfigParser.parse(options: options, config: config)
       refute_nil parsed[:out]
       refute_nil parsed[:out][:folder]
@@ -380,7 +358,7 @@ module RokuBuilder
     def test_outfile_config_default_jpg
       config = good_config
 
-      options = build_options({build: true, working: true, out: "file.jpg"})
+      options = build_options({validate: true, working: true, out: "file.jpg"})
       parsed = ConfigParser.parse(options: options, config: config)
       refute_nil parsed[:out]
       refute_nil parsed[:out][:folder]

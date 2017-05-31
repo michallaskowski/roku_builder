@@ -18,12 +18,16 @@ require "webmock/minitest"
 
 RokuBuilder::Logger.set_testing
 WebMock.disable_net_connect!
-def build_config_object(klass, options = {screens: true})
-  options = build_options(options)
+def build_config_options_objects(klass, options = {validate: true}, empty_plugins = true)
+  options = build_options(options, empty_plugins)
   config = RokuBuilder::Config.new(options: options)
   config.instance_variable_set(:@config, good_config(klass))
   config.parse
-  config
+  [config, options]
+end
+
+def build_config_object(klass, options= {validate: true}, empty_plugins = true)
+  build_config_options_objects(klass, options, empty_plugins).first
 end
 
 def test_files_path(klass)
@@ -31,7 +35,8 @@ def test_files_path(klass)
   File.join(File.dirname(__FILE__), "test_files", klass)
 end
 
-def build_options(options = {screens: true})
+def build_options(options = {validate: true}, empty_plugins = true)
+  RokuBuilder.class_variable_set(:@@plugins, {}) if empty_plugins
   options = RokuBuilder::Options.new(options: options)
   options.validate
   options
@@ -72,10 +77,10 @@ def good_config(klass=nil)
     folders: ["resources","source"],
     files: ["manifest"],
     app_name: "<app name>",
-    stage_method: :git,
+    stage_method: :script,
     stages:{
     production: {
-    branch: "production",
+    script: {stage: "stage_script", unstage: "unstage_script"},
     key: "a"
   }
   }

@@ -10,9 +10,6 @@ RokuBuilder.run()
 
 
 
-#parser = OptionParser.new do |opts|
-#  opts.banner = "Usage: roku <command> [options]"
-#
 #  opts.on("-l", "--sideload", "Command: Sideload an app") do
 #    options[:sideload] = true
 #  end
@@ -31,14 +28,6 @@ RokuBuilder.run()
 #
 #  opts.on("-o", "--deeplink-options OPTIONS", "Command: Deeplink into app. Define options as keypairs. (eg. a:b, c:d,e:f)") do |o|
 #    options[:deeplink] = o
-#  end
-#
-#  opts.on("--configure", "Command: Copy base configuration file to the --config location. Default: '~/.roku_config.json'") do
-#    options[:configure] = true
-#  end
-#
-#  opts.on("--validate", "Command: Validate configuration'") do
-#    options[:validate] = true
 #  end
 #
 #  opts.on("-d", "--delete", "Command: Delete the currently sideloaded app") do
@@ -73,20 +62,8 @@ RokuBuilder.run()
 #    options[:genkey] = true
 #  end
 #
-#  opts.on("--print ATTRIBUTE", "Command: Print attribute for scripting") do |a|
-#    options[:print] = a
-#  end
-#
 #  opts.on("--profile COMMAND", "Command: Run various profiler options") do |c|
 #    options[:profile] = c
-#  end
-#
-#  opts.on("--do-stage", "Command: Run the stager. Used for scripting. Always run --do-unstage after") do
-#    options[:dostage] = true
-#  end
-#
-#  opts.on("--do-unstage", "Command: Run the unstager. Used for scripting. Always run --do-script first") do
-#    options[:dounstage] = true
 #  end
 #
 #  opts.on("--screen SCREEN", "Command: show a screen") do |s|
@@ -109,23 +86,6 @@ RokuBuilder.run()
 #    options[:applist] = true
 #  end
 #
-#  opts.on("-r", "--ref REF", "Git referance to use for sideloading") do |r|
-#    options[:ref] = r
-#  end
-#
-#  opts.on("-w", "--working", "Use working directory to sideload or test") do
-#    options[:working] = true
-#  end
-#
-#  opts.on("-c", "--current", "Use current directory to sideload or test. Overrides any project config") do
-#    options[:current] = true
-#  end
-#
-#  opts.on("-s", "--stage STAGE", "Set the stage to use. Default: 'production'") do |b|
-#    options[:stage] = b
-#    options[:set_stage] = true
-#  end
-#
 #  opts.on("-M", "--manifest-update", "Update the manifest file while building or packaging") do
 #    options[:update_manifest] = true
 #  end
@@ -136,19 +96,6 @@ RokuBuilder.run()
 #
 #  opts.on("-e", "--edit PARAMS", "Edit config params when configuring. (eg. a:b, c:d,e:f)") do |p|
 #    options[:edit_params] = p
-#  end
-#
-#  opts.on("--config CONFIG", "Set a custom config file. Default: '~/.roku_config.json'") do |c|
-#    options[:config] = c
-#  end
-#
-#  opts.on("-D", "--device ID", "Use a different device corresponding to the given ID") do |d|
-#    options[:device] = d
-#    options[:device_given] = true
-#  end
-#
-#  opts.on("-P", "--project ID", "Use a different project") do |p|
-#    options[:project] = p
 #  end
 #
 #  opts.on("-a", "--app ID", "Send App id for deeplinking") do |a|
@@ -170,24 +117,5 @@ RokuBuilder.run()
 #  opts.on("-x", "--exclude", "Apply exclude config to sideload") do
 #    options[:exclude] = true
 #  end
-#
-#  opts.on("-V", "--verbose", "Print Info message") do
-#    options[:verbose] = true
-#  end
-#
-#  opts.on("--debug", "Print Debug messages") do
-#    options[:debug] = true
-#  end
-#
-#  opts.on("-h", "--help", "Show this message") do
-#    puts opts
-#    exit
-#  end
-#
-#  opts.on("-v", "--version", "Show version") do
-#    puts RokuBuilder::VERSION
-#    exit
-#  end
-#end
 
 

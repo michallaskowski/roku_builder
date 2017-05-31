@@ -6,7 +6,7 @@ module RokuBuilder
   class OptionsTest < Minitest::Test
     def test_options_initialize_no_params
       count = 0
-      parse_stub = lambda{ count+= 1; {screens: true} }
+      parse_stub = lambda{ count+= 1; {validate: true} }
       options = Options.allocate
       options.stub(:parse, parse_stub) do
         options.send(:initialize)
@@ -15,20 +15,21 @@ module RokuBuilder
     end
     def test_options_initialize_params
       count = 0
-      parse_stub = lambda{ count+= 1; {screens: true} }
+      parse_stub = lambda{ count+= 1; {validate: true} }
       options = Options.allocate
       options.stub(:parse, parse_stub) do
-        options.send(:initialize, {options: {screens: true}})
+        options.send(:initialize, {options: {validate: true}})
       end
       assert_equal 0, count
     end
     def test_options_parse
       parser = Minitest::Mock.new()
+      options_hash = {}
       options = Options.allocate
       parser.expect(:parse!, nil)
       options.stub(:build_parser, parser) do
         options.stub(:validate_parser, nil) do
-          options.send(:parse)
+          options_hash = options.send(:parse)
         end
       end
       parser.verify
@@ -46,7 +47,7 @@ module RokuBuilder
       parser.verify
       Array.class_eval { remove_method :each_option  }
     end
-    def test_options_parse_validate_options_good
+    def test_options_parse_validate_options_bad
       Array.class_eval { alias_method :each_option, :each  }
       parser = Minitest::Mock.new()
       options = Options.allocate
@@ -80,8 +81,8 @@ module RokuBuilder
     end
     def test_options_validate_extra_commands
       options = {
-        sideload: true,
-        package: true
+        configure: true,
+        validate: true
       }
       assert_raises InvalidOptions do
         build_options(options)
@@ -95,7 +96,7 @@ module RokuBuilder
     end
     def test_options_validate_extra_sources_sideload
       options = {
-        sideload: true,
+        validate: true,
         working: true,
         current: true
       }
@@ -103,22 +104,8 @@ module RokuBuilder
         build_options(options)
       end
     end
-    def test_options_validate_working
-      options = {
-        sideload: true,
-        working: true
-      }
-      build_options(options)
-    end
-    def test_options_validate_no_source
-      options = {
-        package: true
-      }
-      assert_raises InvalidOptions do
-        build_options(options)
-      end
-    end
     def test_options_validate_bad_current
+      skip("to be moved to package/sideload module")
       options = {
         package: true,
         current: true
@@ -128,6 +115,7 @@ module RokuBuilder
       end
     end
     def test_options_validate_bad_in
+      skip("to be moved to package/sideload module")
       options = {
         package: true,
         in: true
@@ -136,14 +124,8 @@ module RokuBuilder
         build_options(options)
       end
     end
-    def test_options_validate_depricated
-      options = {
-        deeplink: "a:b c:d",
-        deeplink_depricated: true
-      }
-      build_options(options)
-    end
     def test_options_validate_current
+      skip("to be moved to package/sideload module")
       options = {
         sideload: true,
         current: true
@@ -152,7 +134,7 @@ module RokuBuilder
     end
     def test_options_validate_extra_sources_package
       options = {
-        package: true,
+        validate: true,
         in: "",
         set_stage: true
       }
@@ -160,68 +142,60 @@ module RokuBuilder
         build_options(options)
       end
     end
-    def test_options_exclude_command_package
+    def test_options_exclude_command
       options = build_options({
-        package:true,
-        set_stage: true
+        validate:true,
       })
+      options.define_singleton_method(:exclude_commands) {[:validate]}
       assert options.exclude_command?
     end
-    def test_options_exclude_command_build
+    def test_options_exclude_command_false
       options = build_options({
-        build:true,
-        set_stage: true
-      })
-      assert options.exclude_command?
-    end
-    def test_options_exclude_command_sideload
-      options = build_options({
-        sideload:true,
-        set_stage: true
+        validate:true,
       })
       refute options.exclude_command?
     end
-    def test_options_source_command_sideload
+    def test_options_source_command
       options = build_options({
-        sideload:true,
-        working: true
+        validate:true,
       })
+      options.define_singleton_method(:source_commands) {[:validate]}
       assert options.source_command?
     end
-    def test_options_source_command_deeplink
+    def test_options_source_commandfalse
       options = build_options({
-        deeplink: true,
+        validate: true,
       })
       refute options.source_command?
     end
     def test_options_command
       options = build_options({
-        deeplink: true,
+        validate: true,
       })
-      assert_equal :deeplink, options.command
+      assert_equal :validate, options.command
     end
     def test_options_device_command_true
       options = build_options({
-        deeplink: true,
+        validate: true,
       })
+      options.define_singleton_method(:device_commands) {[:validate]}
       assert options.device_command?
     end
     def test_options_device_command_false
       options = build_options({
-        build: true,
-        working: true
+        validate: true,
       })
       refute options.device_command?
     end
     def test_options_has_source_false
       options = build_options({
-        deeplink: true,
+        validate: true,
       })
       refute options.has_source?
     end
     def test_options_has_source_true
       options = build_options({
-        deeplink: true,
+        validate: true,
         working: true
       })
       assert options.has_source?

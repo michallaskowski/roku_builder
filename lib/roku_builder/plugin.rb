@@ -2,7 +2,9 @@
 
 module RokuBuilder
 
-  # mixin for plugins
+  # Super class for modules
+  # This class defines a common initializer and allows subclasses
+  # to define their own secondary initializer
   module Plugin
 
     def commands
