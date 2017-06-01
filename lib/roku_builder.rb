@@ -51,13 +51,12 @@ module RokuBuilder
   end
 
   def self.plugins
-    @@plugins ||= {}
+    @@plugins ||= []
   end
 
-  def self.register_plugin(klass:, name:)
-    @@plugins ||= {}
-    raise ImplementationError, "Duplicate plugin names" if @@plugins[name]
-    @@plugins[name] = klass
+  def self.register_plugin(plugin)
+    @@plugins ||= []
+    @@plugins << plugin
   end
 
   def self.setup_plugins
@@ -73,13 +72,13 @@ module RokuBuilder
   end
 
   def self.process_plugins
-    @@plugins ||= {}
-    unless @@plugins.count == @@plugins.values.uniq.count
-      raise ImplementationError, "Duplicate plugin classes"
+    @@plugins ||= []
+    unless @@plugins.count == @@plugins.uniq.count
+      raise ImplementationError, "Duplicate plugins"
     end
-    @@plugins.each_value do |klass|
-      klass.dependencies.each do |name|
-        raise ImplementationError, "Missing dependency: #{name}" unless @@plugins[name]
+    @@plugins.each do |plugin|
+      plugin.dependencies.each do |dependency|
+        raise ImplementationError, "Missing dependency: #{dependency}" unless @@plugins.include?(dependency)
       end
     end
   end

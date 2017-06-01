@@ -7,13 +7,16 @@ module RokuBuilder
     def setup
       options = {print: "field", working: true}
       RokuBuilder.setup_plugins
+      unless RokuBuilder.plugins.include?(Scripter)
+        RokuBuilder.register_plugin(Scripter)
+      end
       @config, @options = build_config_options_objects(ScripterTest, options, false)
     end
 
     def test_scripter_print_bad_attr
       scripter = Scripter.new(config: @config)
       assert_raises ExecutionError do
-        scripter.print(config: @config, options: @options)
+        scripter.print(options: @options)
       end
     end
 
@@ -29,7 +32,7 @@ module RokuBuilder
       }
       scripter = Scripter.new(config: @config)
       scripter.stub(:printf, fake_print) do
-        scripter.print(config: @config, options: @options)
+        scripter.print(options: @options)
       end
       assert_equal 1, call_count
     end
@@ -45,7 +48,7 @@ module RokuBuilder
       }
       scripter = Scripter.new(config: @config)
       scripter.stub(:printf, fake_print) do
-        scripter.print(config: @config, options: @options)
+        scripter.print(options: @options)
       end
       assert_equal 1, call_count
     end
@@ -62,7 +65,7 @@ module RokuBuilder
       }
       scripter = Scripter.new(config: @config)
       scripter.stub(:printf, fake_print) do
-        scripter.print(config: @config, options: @options)
+        scripter.print(options: @options)
       end
       assert_equal 1, call_count
     end
@@ -79,7 +82,7 @@ module RokuBuilder
       }
       scripter = Scripter.new(config: @config)
       scripter.stub(:printf, fake_print) do
-        scripter.print(config: @config, options: @options)
+        scripter.print(options: @options)
       end
       assert_equal 1, call_count
     end
@@ -97,7 +100,7 @@ module RokuBuilder
       }
       scripter = Scripter.new(config: @config)
       scripter.stub(:printf, fake_print) do
-        scripter.print(config: @config, options: @options)
+        scripter.print(options: @options)
       end
       assert_equal 1, call_count
     end

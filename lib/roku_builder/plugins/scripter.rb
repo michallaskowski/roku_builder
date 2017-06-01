@@ -22,7 +22,7 @@ module RokuBuilder
       @config = config
     end
 
-    def print(config:, options:)
+    def print(options:)
       attributes = [
         :title, :build_version, :app_version, :root_dir, :app_name
       ]
@@ -31,13 +31,13 @@ module RokuBuilder
         raise ExecutionError, "Unknown attribute: #{options[:print]}"
       end
 
-      manifest = Manifest.new(config: config)
+      manifest = Manifest.new(config: @config)
 
       case options[:print]
       when :root_dir
-        printf "%s", config.project[:directory]
+        printf "%s", @config.project[:directory]
       when :app_name
-        printf "%s", config.project[:app_name]
+        printf "%s", @config.project[:app_name]
       when :title
         printf "%s", manifest.title
       when :build_version
@@ -50,5 +50,5 @@ module RokuBuilder
     end
   end
 
-  RokuBuilder.register_plugin(klass: Scripter, name: "scripter")
+  RokuBuilder.register_plugin(Scripter)
 end

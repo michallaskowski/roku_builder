@@ -38,7 +38,7 @@ module RokuBuilder
     private
 
     def setup_plugin_commands
-      RokuBuilder.plugins.each_value do |plugin|
+      RokuBuilder.plugins.each do |plugin|
         plugin.commands.each do |command, attributes|
           commands << command
           [:device, :source, :exclude].each do |type|
@@ -132,8 +132,8 @@ module RokuBuilder
     end
 
     def add_plugin_options(parser:, options:)
-      RokuBuilder.plugins.each_value do |plugin|
-        plugin.parse_options(options_parser: parser, options: options)
+      RokuBuilder.plugins.each do |plugin|
+        plugin.parse_options(parser: parser, options: options)
       end
     end
 

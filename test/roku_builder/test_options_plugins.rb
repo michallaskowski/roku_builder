@@ -8,7 +8,7 @@ module RokuBuilder
       RokuBuilder.class_variable_set(:@@plugins, nil)
       parser = Minitest::Mock.new()
       options_hash = {}
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin, name: "test")
+      RokuBuilder.register_plugin( OptionsTestPlugin)
       options = Options.allocate
       parser.expect(:parse!, nil)
       options.stub(:build_parser, parser) do
@@ -22,7 +22,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       assert_includes options.send(:commands), :test
@@ -30,7 +30,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands_source
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       assert_includes options.send(:source_commands), :test
@@ -38,7 +38,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands_device
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       assert_includes options.send(:device_commands), :test
@@ -46,7 +46,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands_exclude
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       assert_includes options.send(:exclude_commands), :test
@@ -54,7 +54,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands_basic
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin2, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin2)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       assert_includes options.send(:commands), :test
@@ -62,7 +62,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands_source
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin2, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin2)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       refute_includes options.send(:source_commands), :test
@@ -70,7 +70,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands_device
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin2, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin2)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       refute_includes options.send(:device_commands), :test
@@ -78,7 +78,7 @@ module RokuBuilder
     end
     def test_options_plugins_commands_exclude
       RokuBuilder.class_variable_set(:@@plugins, nil)
-      RokuBuilder.register_plugin(klass: OptionsTestPlugin2, name: "test")
+      RokuBuilder.register_plugin(OptionsTestPlugin2)
       options = Options.allocate
       options.send(:setup_plugin_commands)
       refute_includes options.send(:exclude_commands), :test
@@ -87,7 +87,7 @@ module RokuBuilder
   end
   class OptionsTestPlugin
     extend Plugin
-    def self.parse_options(options_parser:, options:)
+    def self.parse_options(parser:, options:)
       options[:run] = true
     end
     def self.commands
@@ -96,7 +96,7 @@ module RokuBuilder
   end
   class OptionsTestPlugin2
     extend Plugin
-    def self.parse_options(options_parser:, options:)
+    def self.parse_options(parser:, options:)
       options[:run] = true
     end
     def self.commands

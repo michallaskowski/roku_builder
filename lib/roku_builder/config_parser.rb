@@ -32,13 +32,11 @@ module RokuBuilder
       setup_sideload_config
       setup_package_config
       setup_monitor_configs
-      setup_navigate_configs
       setup_manifest_config
       setup_deeplink_configs
       setup_text_configs
       setup_test_configs
       setup_screencapture_configs
-      setup_screen_config
       setup_profiler_configs
       setup_genkey_configs
     end
@@ -264,34 +262,11 @@ module RokuBuilder
       end
     end
 
-    def setup_navigate_configs
-      @parsed[:init_params][:navigator] = {mappings: generate_maggings}
-      if @options[:navigate]
-        @parsed[:navigate_config] = {
-          commands: @options[:navigate].split(/, */).map{|c| c.to_sym}
-        }
-      end
-    end
-
-    def generate_maggings
-      mappings = {}
-      if @config[:input_mapping]
-        @config[:input_mapping].each_pair {|key, value|
-          unless "".to_sym == key
-            key = key.to_s.sub(/\\e/, "\e").to_sym
-            mappings[key] = value
-          end
-        }
-      end
-      mappings
-    end
-
     def setup_manifest_config
       @parsed[:manifest_config] = {
         root_dir: get_root_dir
       }
     end
-
 
     def setup_deeplink_configs
       @parsed[:deeplink_config] = {options: @options[:deeplink]}
@@ -311,11 +286,6 @@ module RokuBuilder
         out_folder: @parsed[:out][:folder],
         out_file: @parsed[:out][:file]
       }
-    end
-    def setup_screen_config
-      if @options[:screen]
-        @parsed[:screen_config] = {type: @options[:screen].to_sym}
-      end
     end
     def setup_profiler_configs
       if @options[:profile]

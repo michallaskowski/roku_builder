@@ -4,9 +4,40 @@ module RokuBuilder
 
   # Navigation methods
   class Navigator < Util
+    extend Plugin
+
+    def self.commands
+      {
+        nav: {device: true},
+        navigate: {device: true},
+        type: {device: true},
+        screen: {device: true},
+        screens: {}
+      }
+    end
+
+    def self.parse_options(options_parser:, options:)
+      options_parser.seperator("Navigator Commands:")
+      options_parser.on("-N", "--nav CMD", "Send the given command to the roku") do |n|
+        options[:nav] = n
+      end
+      options_parser.on("--navigate", "Run interactive navigator") do
+        options[:navigate] = true
+      end
+      options_parser.on("-y", "--type TEXT", "Type the given text on the roku device") do |t|
+        options[:type] = t
+      end
+      options_parser.on("--screen SCREEN", "Show a screen") do |s|
+        options[:screen] = s
+      end
+
+      options_parser.on("--screens", "Show possible screens") do
+        options[:screens] = true
+      end
+    end
 
     # Setup navigation commands
-    def init(mappings: nil)
+    def init()
       @commands = {
         home: "Home",             rew: "Rev",                 ff: "Fwd",
         play: "Play",             select: "Select",           left: "Left",
@@ -33,11 +64,84 @@ module RokuBuilder
       @runable = [
         :secret, :channels
       ]
-      mappings_init(mappings: mappings)
+      mappings_init
     end
 
-    # Init Mappings
-    def mappings_init(mappings: nil)
+
+    # Send a navigation command to the roku device
+    # @param command [Symbol] The smbol of the command to send
+    # @return [Boolean] Success
+    def nav(options:)
+      commands = options[:nav].split(/, */).map{|c| c.to_sym}
+      commands.each do |command|
+        unless @commands.has_key?(command)
+          raise ExecutionError, "Unknown Navigation Command"
+        end
+        conn = multipart_connection(port: 8060)
+        path = "/keypress/#{@commands[command]}"
+        @logger.debug("Send Command: "+path)
+        response = conn.post path
+        raise ExecutionError, "Navigation Failed" unless response.success?
+      end
+    end
+
+    # Type text on the roku device
+    # @param text [String] The text to type on the device
+    # @return [Boolean] Success
+    def type(options:)
+      conn = multipart_connection(port: 8060)
+      options[:type].split(//).each do |c|
+        path = "/keypress/LIT_#{CGI::escape(c)}"
+        @logger.debug("Send Letter: "+path)
+        response = conn.post path
+        return false unless response.success?
+      end
+      return true
+    end
+
+    def navigate(options:)
+      running = true
+      @logger.info("Key Mappings:")
+      @mappings.each_value {|key|
+        @logger.info("#{key[1]} -> #{@commands[key[0].to_sym]}")
+      }
+      @logger.info("Control-C -> Exit")
+      while running
+        char = read_char
+        @logger.debug("Char: #{char.inspect}")
+        if char == "\u0003"
+          running = false
+        else
+          Thread.new(char) {|char| handle_navigate_input(char)}
+        end
+      end
+    end
+
+
+    # Show the commands for one of the roku secret screens
+    # @param type [Symbol] The type of screen to show
+    # @return [Boolean] Screen found
+    def screen(options:)
+      type = options[:screen].to_sym
+      unless @screens.has_key?(type)
+        raise ExecutionError, "Unknown Screen"
+      end
+      if @runable.include?(type)
+        nav(options: {nav: @screens[type].join(", ")})
+      else
+        @logger.unknown("Cannot run command automatically")
+      end
+      display_screen_command(type)
+    end
+
+    # Show avaiable roku secret screens
+    def screens(options:)
+      @screens.keys.each {|screen| @logger.unknown(screen)}
+    end
+
+    private
+
+    def mappings_init()
       @mappings = {
         "\e[1~": [ "home", "Home" ],
         "<": [ "rew", "<" ],
@@ -66,113 +170,25 @@ module RokuBuilder
         #"": [ "hdmi4", "" ],
         #"": [ "avi", "" ]
       }
-      @mappings.merge!(mappings) if mappings
+      @mappings.merge!(generate_maggings) if @config.input_mapping
     end
 
-    # Send a navigation command to the roku device
-    # @param command [Symbol] The smbol of the command to send
-    # @return [Boolean] Success
-    def nav(commands:)
-      commands.each do |command|
-        if @commands.has_key?(command)
-          conn = multipart_connection(port: 8060)
-
-          path = "/keypress/#{@commands[command]}"
-          @logger.debug("Send Command: "+path)
-          response = conn.post path
-          return false unless response.success?
-        else
-          return false
-        end
-      end
-      return true
-    end
-
-    # Type text on the roku device
-    # @param text [String] The text to type on the device
-    # @return [Boolean] Success
-    def type(text:)
-      conn = multipart_connection(port: 8060)
-      text.split(//).each do |c|
-        path = "/keypress/LIT_#{CGI::escape(c)}"
-        @logger.debug("Send Letter: "+path)
-        response = conn.post path
-        return false unless response.success?
-      end
-      return true
-    end
-
-    def interactive
-      running = true
-      @logger.info("Key Mappings:")
-      @mappings.each_value {|key|
-        @logger.info("#{key[1]} -> #{@commands[key[0].to_sym]}")
-      }
-      @logger.info("Control-C -> Exit")
-      while running
-        char = read_char
-        @logger.debug("Char: #{char.inspect}")
-        if char == "\u0003"
-          running = false
-        else
-          Thread.new(char) {|character|
-            if @mappings[character.to_sym] != nil
-              nav(commands:[@mappings[character.to_sym][0].to_sym])
-            elsif character.inspect.force_encoding("UTF-8").ascii_only?
-              type(text: character)
-            end
-          }
-        end
-      end
-    end
-
-    # Show the commands for one of the roku secret screens
-    # @param type [Symbol] The type of screen to show
-    # @return [Boolean] Screen found
-    def screen(type:)
-      if @screens.has_key?(type)
-        if @runable.include?(type)
-          nav(commands: @screens[type])
-        else
-          @logger.unknown("Cannot run command automatically")
-        end
-        display, count, string = [], [], ""
-        @screens[type].each do |command|
-          if display.count > 0 and  display[-1] == command
-            count[-1] = count[-1] + 1
-          else
-            display.push(command)
-            count.push(1)
+    def generate_maggings
+      mappings = {}
+      if @config[:input_mapping]
+        @config[:input_mapping].each_pair {|key, value|
+          unless "".to_sym == key
+            key = key.to_s.sub(/\\e/, "\e").to_sym
+            mappings[key] = value
           end
-        end
-        display.each_index do |i|
-          if count[i] > 1
-            string = string + @commands[display[i]]+" x "+count[i].to_s+", "
-          else
-            string = string + @commands[display[i]]+", "
-          end
-        end
-        if @runable.include?(type)
-          @logger.info(string.strip)
-        else
-          @logger.unknown(string.strip)
-        end
-      else
-        return false
+        }
       end
-      true
-    end
-
-    # Show avaiable roku secret screens
-    def screens
-      @screens.keys.each {|screen| @logger.unknown(screen)}
+      mappings
     end
 
     def read_char
       STDIN.echo = false
       STDIN.raw!
-
-
       input = STDIN.getc.chr
       if input == "\e" then
         input << STDIN.read_nonblock(3) rescue nil
@@ -183,5 +199,38 @@ module RokuBuilder
       STDIN.echo = true
       STDIN.cooked!
     end
+
+    def handle_navigate_input(char)
+      if @mappings[char.to_sym] != nil
+        nav(options: {nav: @mappings[char.to_sym][0]})
+      elsif char.inspect.force_encoding("UTF-8").ascii_only?
+        type(options: {type: char})
+      end
+    end
+
+    def display_screen_command(type)
+      display, count, string = [], [], ""
+      @screens[type].each do |command|
+        if display.count > 0 and  display[-1] == command
+          count[-1] = count[-1] + 1
+        else
+          display.push(command)
+          count.push(1)
+        end
+      end
+      display.each_index do |i|
+        if count[i] > 1
+          string = string + @commands[display[i]]+" x "+count[i].to_s+", "
+        else
+          string = string + @commands[display[i]]+", "
+        end
+      end
+      if @runable.include?(type)
+        @logger.info(string.strip)
+      else
+        @logger.unknown(string.strip)
+      end
+    end
   end
+  RokuBuilder.register_plugin(Navigator)
 end
