@@ -11,28 +11,13 @@ module RokuBuilder
     def self.simple_commands
       {
         delete: { klass: Loader, method: :unload },
-        monitor: { klass: Monitor, method: :monitor,
-          config_key: :monitor_config },
-        navigate: { klass: Navigator, method: :nav, config_key: :navigate_config,
-          failure: FAILED_NAVIGATING },
-        navigator: { klass: Navigator, method: :interactive },
-        screen: { klass: Navigator, method: :screen, config_key: :screen_config,
-          failure: FAILED_NAVIGATING },
         key: { klass: Keyer, method: :rekey, config_key: :key },
         genkey: { klass: Keyer, method: :genkey, config_key: :genkey },
-        screens: { klass: Navigator, method: :screens },
-        text: { klass: Navigator, method: :type, config_key: :text_config },
         screencapture: { klass: Inspector, method: :screencapture, config_key: :screencapture_config,
           failure: FAILED_SCREENCAPTURE },
         applist: {klass: Linker, method: :list},
         profile: {klass: Profiler, method: :run, config_key: :profiler_config}
       }
-    end
-    # Validate Config
-    # @return [Integer] Success or Failure Code
-    def self.validate()
-      Logger.instance.info "Config validated"
-      SUCCESS
     end
     # Run Sideload
     # @param options [Hash] user options
@@ -174,53 +159,6 @@ module RokuBuilder
       else
         return FAILED_DEEPLINKING
       end
-    end
-
-    # Run Print
-    # @param options [Hash] user options
-    # @param config [Config] config object
-    def self.print(options:, config:)
-      stager = Stager.new(**config.parsed[:stage_config])
-      code = nil
-      if stager.stage
-        code = Scripter.print(attribute: options[:print].to_sym, configs: config.parsed)
-      end
-      stager.unstage
-      code
-    end
-
-    def self.dostage(config:)
-      stager = Stager.new(**config.parsed[:stage_config])
-      stager.stage
-    end
-
-    def self.dounstage(config:)
-      stager = Stager.new(**config.parsed[:stage_config])
-      stager.unstage
-    end
-
-    # Run a simple command
-    # @param klass [Class] class of object to create
-    # @param method [Symbol] methog to run on klass
-    # @param config_key [Symbol] config to send from configs if not nil
-    # @param config [Configs] config object
-    # @param failure [Integer] failure code to return on failure if not nil
-    # @return [Integer] Success of failure code
-    def self.simple_command(klass:, method:, config_key: nil, config:, failure: nil)
-      klass_config = config.parsed[:device_config].dup
-      key = klass.to_s.split("::")[-1].underscore.to_sym
-      if config.parsed[:init_params][key]
-        klass_config[:init_params] = config.parsed[:init_params][key]
-      end
-      instance = klass.new(**klass_config)
-      if config_key
-        success = instance.send(method, config.parsed[config_key])
-      else
-        success = instance.send(method)
-      end
-      return failure unless failure.nil? or success
-      Logger.instance.debug "#{klass} call #{method} successfully"
-      SUCCESS
     end
   end
 end

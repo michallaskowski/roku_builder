@@ -4,70 +4,113 @@ module RokuBuilder
 
   # Load/Unload/Build roku applications
   class Loader < Util
+    extend Plugin
+
+    def self.commands
+      {
+        sideload: {source: true, device: true},
+        build: {source: true},
+        delete: {device: true}
+      }
+    end
+
+    def self.parse_options(parser:, options:)
+      opts.on("-l", "--sideload", "Command: Sideload an app") do
+        options[:sideload] = true
+      end
+      opts.on("-d", "--delete", "Command: Delete the currently sideloaded app") do
+        options[:delete] = true
+      end
+      opts.on("-b", "--build", "Command: build a zip to be sideloaded") do
+        options[:build] = true
+      end
+      opts.on("-x", "--exclude", "Apply exclude config to sideload") do
+        options[:exclude] = true
+      end
+    end
+
+    def self.dependencies
+      [Navigator]
+    end
 
     # Sideload an app onto a roku device
-    # @param root_dir [String] Path to the root directory of the roku app
-    # @param content [Hash] Hash containing arrays for folder, files, and excludes. Default: nil
-    # @return [String] Build version on success, nil otherwise
-    def sideload(update_manifest: false, content: nil, infile: nil, out_file: nil)
-      Navigator.new(config: @config).nav(commands: [:home])
-      build_version = nil
-      out = out_file
-      if infile
-        build_version = Manifest.new(config: @config).build_version
-        out = infile
-      else
-        # Update manifest
-        manifest = Manifest.new(config: @config)
-        if update_manifest
-          manifest.increment_build_version
-        end
-        build_version = manifest.build_version
-        @logger.info "Build: #{out}" if out
-        out = build(build_version: build_version, out_file: out, content: content)
+    def sideload(options:)
+      Navigator.new(config: @config).nav(options:{nav: "home"})
+      did_build = false
+      unless options[:in]
+        did_build = true
+        build(options: options)
       end
-      path = "/plugin_install"
-      # Connect to roku and upload file
-      conn = multipart_connection
+      upload
+      # Cleanup
+      File.delete(file_path(:in)) if did_build and not options[:out]
+    end
+
+
+    # Build an app to sideload later
+    def build(options:)
+      @options = options
+      build_zip(setup_build_content)
+      @config.in = @config.out #setting in path for possible sideload
+    end
+
+    # Remove the currently sideloaded app
+    def unload(options:)
+      payload =  {mysubmit: "Delete", archive: ""}
+      response  = multipart_connection.post "/plugin_install", payload
+      unless response.status == 200 and response.body =~ /Install Success/
+        raise ExecutionError, "Failed Unloading"
+      end
+    end
+
+    private
+
+    def upload
       payload =  {
         mysubmit: "Replace",
-        archive: Faraday::UploadIO.new(out, 'application/zip')
+        archive: Faraday::UploadIO.new(file_path(:in), 'application/zip')
       }
-      response = conn.post path, payload
-      # Cleanup
-      File.delete(out) if infile.nil? and out_file.nil?
+      response = multipart_connection.post "/plugin_install", payload
       if response.status==200 and response.body=~/Identical to previous version/
         @logger.warn("Sideload identival to previous version")
       elsif not (response.status==200 and response.body=~/Install Success/)
         raise ExecutionError, "Failed Sideloading"
       end
-      build_version
     end
 
+    def file_path(type)
+      file = @config.send(type)[:file]
+      file ||= Manifest.new(config: @config).build_version
+      file = file+".zip" unless file.end_with?(".zip")
+      File.join(@config.send(type)[:folder], file)
+    end
 
-    # Build an app to sideload later
-    # @param root_dir [String] Path to the root directory of the roku app
-    # @param build_version [String] Version to assigne to the build. If nil will pull the build version form the manifest. Default: nil
-    # @param out_file [String] Path for the output file. If nil will create a file in /tmp. Default: nil
-    # @param content [Hash] Hash containing arrays for folder, files, and excludes. Default: nil
-    # @return [String] Path of the build
-    def build(build_version: nil, out_file: nil, content: nil)
-      content ||= {}
-      content[:folders] ||= Dir.entries(@config.parsed[:root_dir]).select {|entry| File.directory? File.join(@config.parsed[:root_dir], entry) and !(entry =='.' || entry == '..') }
-      content[:files] ||= Dir.entries(@config.parsed[:root_dir]).select {|entry| File.file? File.join(@config.parsed[:root_dir], entry)}
-      content[:excludes] ||= []
-      out_file = "#{Dir.tmpdir}/#{build_version}" unless out_file
-      out_file = out_file+".zip" unless out_file.end_with?(".zip")
-      File.delete(out_file) if File.exist?(out_file)
-      io = Zip::File.open(out_file, Zip::File::CREATE)
+    def setup_build_content()
+      content = {}
+      content[:excludes] = []
+      if @options[:current]
+        content[:folders] = Dir.entries(@config.root_dir).select {|entry| File.directory? File.join(@config.root_dir, entry) and !(entry =='.' || entry == '..') }
+        content[:files] = Dir.entries(@config.root_dir).select {|entry| File.file? File.join(@config.root_dir, entry)}
+      else
+        content[:folders] = @config.project[:folders]
+        content[:files] = @config.project[:files]
+        content[:exclude] if @options[:exclude] or @options.exclude_command?
+      end
+      content
+    end
+
+    def build_zip(content)
+      path = file_path(:out)
+      File.delete(path) if File.exist?(path)
+      io = Zip::File.open(path, Zip::File::CREATE)
       # Add folders to zip
       content[:folders].each do |folder|
-        base_folder = File.join(@config.parsed[:root_dir], folder)
+        base_folder = File.join(@config.root_dir, folder)
         if File.exist?(base_folder)
           entries = Dir.entries(base_folder)
           entries.delete(".")
           entries.delete("..")
-          writeEntries(@config.parsed[:root_dir], entries, folder, content[:excludes], io)
+          writeEntries(@config.root_dir, entries, folder, content[:excludes], io)
         else
           @logger.warn "Missing Folder: #{base_folder}"
         end
@@ -75,26 +118,7 @@ module RokuBuilder
       # Add file to zip
       writeEntries(@config.parsed[:root_dir], content[:files], "", content[:excludes], io)
       io.close()
-      out_file
     end
-
-    # Remove the currently sideloaded app
-    def unload()
-      path = "/plugin_install"
-
-      # Connect to roku and upload file
-      conn = multipart_connection
-      payload =  {
-        mysubmit: "Delete",
-        archive: ""
-      }
-      response = conn.post path, payload
-      unless response.status == 200 and response.body =~ /Install Success/
-        raise ExecutionError, "Failed Unloading"
-      end
-    end
-
-    private
 
     # Recursively write directory contents to a zip archive
     # @param root_dir [String] Path of the root directory
@@ -121,4 +145,5 @@ module RokuBuilder
       }
     end
   end
+  RokuBuilder.register_plugin(Loader)
 end

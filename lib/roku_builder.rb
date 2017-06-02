@@ -37,7 +37,7 @@ module RokuBuilder
   # @param options [Hash] The options hash
   def self.run
 
-    setup_plugin
+    setup_plugins
 
     options = Options.new
 

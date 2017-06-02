@@ -23,13 +23,12 @@ module RokuBuilder
       process_in_argument
       setup_device
       setup_project
-      setup_outfile
+      setup_in_out_file
       setup_project_config
       setup_stage_config
       setup_key_config
       setup_root_dir
       # To be removed
-      setup_sideload_config
       setup_package_config
       setup_manifest_config
       setup_deeplink_configs
@@ -89,28 +88,30 @@ module RokuBuilder
       end
     end
 
-    def setup_outfile
-      @parsed[:out] = {file: nil, folder: nil}
-      if @options[:out]
-        if out_file_defined?
-          setup_outfile_and_folder
-        else
-          @parsed[:out][:folder] = @options[:out]
+    def setup_in_out_file
+      [:in, :out].each do |type|
+        @parsed[type] = {file: nil, folder: nil}
+        if @options[type]
+          if file_defined?(type)
+            setup_file_and_folder(type)
+          elsif @options[type]
+            @parsed[type][:folder] = File.expand_path(@options[type])
+          end
         end
       end
       set_default_outfile
     end
 
-    def out_file_defined?
-      @options[:out].end_with?(".zip") or @options[:out].end_with?(".pkg") or @options[:out].end_with?(".jpg")
+    def file_defined?(type)
+      @options[type].end_with?(".zip") or @options[type].end_with?(".pkg") or @options[type].end_with?(".jpg")
     end
 
-    def setup_outfile_and_folder
-      @parsed[:out][:folder], @parsed[:out][:file] = Pathname.new(@options[:out]).split.map{|p| p.to_s}
-      if @parsed[:out][:folder] == "." and not @options[:out].start_with?(".")
-        @parsed[:out][:folder] = nil
+    def setup_file_and_folder(type)
+      @parsed[type][:folder], @parsed[type][:file] = Pathname.new(@options[type]).split.map{|p| p.to_s}
+      if @parsed[type][:folder] == "." and not @options[type].start_with?(".")
+        @parsed[type][:folder] = nil
       else
-        @parsed[:out][:folder] = File.expand_path(@parsed[:out][:folder])
+        @parsed[type][:folder] = File.expand_path(@parsed[type][:folder])
       end
     end
 
@@ -175,37 +176,6 @@ module RokuBuilder
       root_dir = Pathname.pwd.to_s if @options[:current]
       root_dir
     end if
-
-    def setup_sideload_config
-      root_dir, content = setup_project_values
-      # Create Sideload Config
-      @parsed[:sideload_config] = {
-        update_manifest: @options[:update_manifest],
-        infile: @options[:in],
-        content: content
-      }
-      # Create Build Config
-      @parsed[:build_config] = { content: content }
-      @parsed[:init_params][:loader] = { root_dir: root_dir }
-    end
-
-    def setup_project_values
-      if @parsed[:project]
-        root_dir = @parsed[:project][:directory]
-        content = {
-          folders: @parsed[:project][:folders],
-          files: @parsed[:project][:files],
-        }
-        content[:excludes] = @parsed[:project][:excludes] if add_excludes?
-        [root_dir, content]
-      else
-        [nil, nil]
-      end
-    end
-
-    def add_excludes?
-      @options[:exclude] or @options.exclude_command?
-    end
 
     def setup_package_config
       if @options[:package]

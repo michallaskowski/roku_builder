@@ -18,6 +18,15 @@ require "webmock/minitest"
 
 RokuBuilder::Logger.set_testing
 WebMock.disable_net_connect!
+def register_plugins(plugin_class)
+  plugins = [plugin_class]
+  plugins.each do |plugin|
+    plugins.concat(plugin.dependencies)
+    unless RokuBuilder.plugins.include?(plugin)
+      RokuBuilder.register_plugin(plugin)
+    end
+  end
+end
 def build_config_options_objects(klass, options = {validate: true}, empty_plugins = true)
   options = build_options(options, empty_plugins)
   config = RokuBuilder::Config.new(options: options)

@@ -233,7 +233,6 @@ module RokuBuilder
         ConfigParser.parse(options: options, config: config)
       end
     end
-
     def test_key_config_bad_key
       options = build_options({validate: true, project: :project1, set_stage: true, })
       options.define_singleton_method(:source_commands){[:validate]}
@@ -244,67 +243,9 @@ module RokuBuilder
         ConfigParser.parse(options: options, config: config)
       end
     end
-
-    def test_setup_sideload_config
-      skip("move to module")
-      config = good_config
-      options = build_options({sideload: true, working: true})
-      parsed = ConfigParser.parse(options: options, config: config)
-
-      refute_nil parsed[:sideload_config]
-      refute_nil parsed[:sideload_config][:content]
-      refute_nil parsed[:build_config]
-      refute_nil parsed[:build_config][:content]
-      refute_nil parsed[:init_params][:loader]
-      refute_nil parsed[:init_params][:loader][:root_dir]
-
-      assert_nil parsed[:sideload_config][:content][:excludes]
-      assert_nil parsed[:sideload_config][:update_manifest]
-      assert_nil parsed[:sideload_config][:infile]
-    end
-    def test_setup_sideload_config_exclude
-      skip("move to module")
-      config = good_config
-      config[:projects][:project1][:excludes] = []
-      options = build_options({sideload: true, working: true})
-      parsed = ConfigParser.parse(options: options, config: config)
-      assert_nil parsed[:sideload_config][:content][:excludes]
-
-      options = build_options({build: true, working: true})
-      parsed = ConfigParser.parse(options: options, config: config)
-      refute_nil parsed[:sideload_config][:content][:excludes]
-
-      options = build_options({package: true, set_stage: true})
-      parsed = ConfigParser.parse(options: options, config: config)
-      refute_nil parsed[:sideload_config][:content][:excludes]
-
-      options = build_options({sideload: true, working: true, exclude: true})
-      parsed = ConfigParser.parse(options: options, config: config)
-      refute_nil parsed[:sideload_config][:content][:excludes]
-    end
-
-    def test_deeplink_app_config
-      skip("move to module")
-      config = good_config
-      options = build_options({deeplink: "a:b", app_id: "xxxxxx"})
-      parsed = ConfigParser.parse(options: options, config: config)
-
-      assert_equal parsed[:deeplink_config][:options], options[:deeplink]
-      assert_equal parsed[:deeplink_config][:app_id], options[:app_id]
-    end
-
-    def test_monitor_config
-      skip("move to module")
-      config = good_config
-      options = build_options({monitor: "main", regexp: "^A$"})
-      parsed = ConfigParser.parse(options: options, config: config)
-      refute_nil parsed[:monitor_config][:regexp]
-      assert parsed[:monitor_config][:regexp].match("A")
-    end
     def test_outfile_config_default
-      skip("move to module")
       config = good_config
-      options = build_options({build: true, working: true, out: nil})
+      options = build_options({validate: true, working: true, out: nil})
       parsed = ConfigParser.parse(options: options, config: config)
 
       refute_nil parsed[:out]

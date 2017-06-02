@@ -92,41 +92,6 @@ module RokuBuilder
       FileUtils.rm(tmp)
     end
 
-    def test_config_update_package
-      skip("to be moved to package module")
-      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), package: true, stage: :production, set_stage: true})
-      config = Config.new(options: options)
-      config.load
-      config.parse
-      options[:build_version] = "BUILDVERSION"
-      config.update
-      assert_equal "app - production - BUILDVERSION", config.parsed[:package_config][:app_name_version]
-      assert_equal "/tmp/app_production_BUILDVERSION", config.parsed[:package_config][:out_file]
-      assert_equal "/tmp/app_production_BUILDVERSION", config.parsed[:inspect_config][:pkg]
-    end
-
-    def test_config_update_build
-      skip("to be moved to build module")
-      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), build: true, stage: :production, set_stage: true})
-      config = Config.new(options: options)
-      config.load
-      config.parse
-      options[:build_version] = "BUILDVERSION"
-      config.update
-      assert_equal "/tmp/app_production_BUILDVERSION", config.parsed[:build_config][:out_file]
-    end
-
-    def test_config_update_sideload
-      skip("to be moved to sideload module")
-      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), sideload: true, stage: :production, set_stage: true, out: "/tmp2"})
-      config = Config.new(options: options)
-      config.load
-      config.parse
-      options[:build_version] = "BUILDVERSION"
-      config.update
-      assert_equal "/tmp2/app_production_BUILDVERSION", config.parsed[:sideload_config][:out_file]
-    end
-
     def test_config_configure_creation
       target_config = File.join(test_files_path(ConfigTest), "configure_test.json")
       options = build_options({config: target_config, configure: true})
@@ -178,6 +143,25 @@ module RokuBuilder
       config.parse
       config.root_dir = "new/dir"
       assert_equal "new/dir", config.root_dir
+    end
+
+    def test_config_set_in
+      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), validate: true})
+      config = Config.new(options: options)
+      config.load
+      config.parse
+      config.in = "new/dir"
+      assert_equal "new/dir", config.in
+    end
+
+    def test_config_dont_set_params
+      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), validate: true})
+      config = Config.new(options: options)
+      config.load
+      config.parse
+      assert_raises StandardError do
+        config.param = "value"
+      end
     end
   end
 end

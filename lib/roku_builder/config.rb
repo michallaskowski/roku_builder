@@ -69,6 +69,10 @@ module RokuBuilder
       @parsed[:root_dir] = root_dir
     end
 
+    def in=(new_in)
+      @parsed[:in] = new_in
+    end
+
     def method_missing(method)
       @parsed[method]
     end

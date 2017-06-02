@@ -4,11 +4,22 @@ module RokuBuilder
 
   # Scene Graph Profiler
   class Profiler < Util
+    extend Plugin
+
+    def self.commands
+      {profile: {device: true}}
+    end
+
+    def self.parse_options(parser:, options:)
+      parser.on("--profile COMMAND", "Run various profiler options") do |c|
+        options[:profile] = c
+      end
+    end
 
     # Run the profiler commands
     # @param command [Symbol] The profiler command to run
-    def run(command:)
-      case command
+    def run(options:)
+      case options[:profile].to_sym
       when :stats
         print_stats
       end
@@ -93,4 +104,5 @@ module RokuBuilder
       [in_nodes, done, all_txt]
     end
   end
+  RokuBuilder.register_plugin(Profiler)
 end

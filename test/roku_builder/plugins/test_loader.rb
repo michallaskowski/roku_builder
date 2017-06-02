@@ -3,18 +3,14 @@
 require_relative "../test_helper.rb"
 
 module RokuBuilder
-  class LoaderTest # skip tests for now < Minitest::Test
+  class LoaderTest < Minitest::Test
     def setup
       Logger.set_testing
-      options = build_options
-      @config = Config.new(options: options)
-      @root_dir = test_files_path(LoaderTest)
-      @device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-      }
-      @config.instance_variable_set(:@parsed, {root_dir: @root_dir, device_config: @device_config, init_params: {}})
+      RokuBuilder.setup_plugins
+      register_plugins(Loader)
+      @config, @options = build_config_options_objects(LoaderTest, {sideload: true, working: true}, false)
+      @root_dir = @config.root_dir
+      @device_config = @config.device_config
       FileUtils.cp(File.join(@root_dir, "manifest_template"), File.join(@root_dir, "manifest"))
       @request_stubs = []
     end
@@ -23,29 +19,20 @@ module RokuBuilder
       @request_stubs.each {|req| remove_request_stub(req)}
     end
     def test_loader_sideload
-      loader_config = {
-        content: {
-          folders: ["source"],
-          files: ["manifest"]
-        }
-      }
-
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}:8060/keypress/Home").
         to_return(status: 200, body: "", headers: {}))
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      build_version = loader.sideload(**loader_config)
-
-      assert_equal "010101.1", build_version
+      loader.sideload(options: @options)
     end
     def test_loader_sideload_infile
       infile = File.join(@root_dir, "test.zip")
-      @config.instance_variable_set(:@parsed, {root_dir: infile, device_config: @device_config, init_params: {}})
-      loader_config = {
-        infile: infile
-      }
+      @config, @options = build_config_options_objects(LoaderTest, {
+        sideload: true,
+        in: infile
+      }, false)
 
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}:8060/keypress/Home").
         to_return(status: 200, body: "", headers: {}))
@@ -53,57 +40,37 @@ module RokuBuilder
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      build_version = loader.sideload(**loader_config)
-
-      assert_equal "010101.1", build_version
+      loader.sideload(options: @options)
     end
-    def test_loader_sideload_update
-      loader_config = {
-        update_manifest: true,
-        content: {
-          folders: ["source"],
-          files: ["manifest"]
-        }
-      }
-
-      @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}:8060/keypress/Home").
-        to_return(status: 200, body: "", headers: {}))
-      @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
-        to_return(status: 200, body: "Install Success", headers: {}))
-
-      loader = Loader.new(config: @config)
-      build_version = loader.sideload(**loader_config)
-
-      assert_equal "#{Time.now.strftime("%m%d%y")}.2", build_version
-
-    end
-
     def test_loader_build_defining_folder_and_files
-      build_config = {
-        content: {
-          folders: ["source"],
-          files: ["manifest"]
-        }
-      }
       loader = Loader.new(config: @config)
-      outfile = loader.build(**build_config)
-      Zip::File.open(outfile) do |file|
+      loader.build(options: @options)
+      file = File.join(@config.out[:folder], Manifest.new(config: @config).build_version+".zip")
+      Zip::File.open(file) do |file|
         assert file.find_entry("manifest") != nil
         assert_nil file.find_entry("a")
         assert file.find_entry("source/b") != nil
         assert file.find_entry("source/c/d") != nil
       end
+      FileUtils.rm(file)
     end
     def test_loader_build_all_contents
-      build_config = {}
+      Pathname.stub(:pwd, @root_dir) do
+        @config, @options = build_config_options_objects(LoaderTest, {
+          sideload: true,
+          current: true
+        }, false)
+      end
       loader = Loader.new(config: @config)
-      outfile = loader.build(**build_config)
-      Zip::File.open(outfile) do |file|
+      loader.build(options: @options)
+      file = File.join(@config.out[:folder], Manifest.new(config: @config).build_version+".zip")
+      Zip::File.open(file) do |file|
         assert file.find_entry("manifest") != nil
         assert file.find_entry("a") != nil
         assert file.find_entry("source/b") != nil
         assert file.find_entry("source/c/d") != nil
       end
+      FileUtils.rm(file)
     end
 
     def test_loader_unload
@@ -111,7 +78,7 @@ module RokuBuilder
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      loader.unload
+      loader.unload(options: @options)
     end
     def test_loader_unload_fail
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
@@ -119,7 +86,7 @@ module RokuBuilder
 
       loader = Loader.new(config: @config)
       assert_raises ExecutionError do
-        loader.unload
+        loader.unload(options: @options)
       end
     end
   end

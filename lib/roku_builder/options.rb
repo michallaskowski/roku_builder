@@ -110,6 +110,12 @@ module RokuBuilder
         end
         opts.separator ""
         opts.separator "Other Options:"
+        opts.on("-O", "--out PATH", "Output file/folder. If PATH ends in .pkg/.zip/.jpg, file is assumed, otherwise folder is assumed") do |o|
+          options[:out] = o
+        end
+        opts.on("-I", "--in PATH", "Input file for sideloading") do |i|
+          options[:in] = i
+        end
         opts.on("-D", "--device ID", "Use a different device corresponding to the given ID") do |d|
           options[:device] = d
           options[:device_given] = true

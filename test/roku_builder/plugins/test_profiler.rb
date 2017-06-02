@@ -3,10 +3,18 @@
 require_relative "../test_helper.rb"
 
 module RokuBuilder
-  class ProfilerTest # skip tests for now < Minitest::Test
+  class ProfilerTest < Minitest::Test
+    def setup
+      Logger.set_testing
+      RokuBuilder.setup_plugins
+      unless RokuBuilder.plugins.include?(Profiler)
+        RokuBuilder.register_plugin(Profiler)
+      end
+    end
     def test_profiler_stats
       Logger.set_testing
-      config = build_config_object(ProfilerTest)
+      options = {profile: "stats"}
+      config, options = build_config_options_objects(ProfilerTest, options, false)
       waitfor = Proc.new do |telnet_config, &blk|
         assert_equal(/.+/, telnet_config["Match"])
         assert_equal(5, telnet_config["Timeout"])
@@ -22,7 +30,7 @@ module RokuBuilder
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:printf, nil) do
-          profiler.run(command: :stats)
+          profiler.run(options: options)
         end
       end
 
