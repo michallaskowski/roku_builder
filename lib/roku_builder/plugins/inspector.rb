@@ -4,24 +4,34 @@ module RokuBuilder
 
   # Collects information on a package for submission
   class Inspector < Util
+    extend Plugin
+
+    def self.commands
+      {
+        inspect: {device: true, source: true},
+        screencapture: {device: true}
+      }
+    end
+
+    def self.parse_options(parser:, options:)
+      parser.on("-S", "--inspect", "Command: save a screencapture to the output file/folder") do
+        options[:inspect] = true
+      end
+      parser.on("-S", "--screencapture", "Command: save a screencapture to the output file/folder") do
+        options[:screencapture] = true
+      end
+    end
 
     # Inspects the given pkg
-    # @param pkg [String] Path to the pkg to be inspected
-    # @param password [String] Password for the given pkg
-    # @return [Hash] Package information. Contains the following keys:
-    #   * app_name
-    #   * dev_id
-    #   * creation_date
-    #   * dev_zip
-    def inspect(pkg:, password:)
-
+    def inspect(options:)
+      pkg = File.join(@config.in[:folder], @config.in[:file])
       pkg = pkg+".pkg" unless pkg.end_with?(".pkg")
       # upload new key with password
       path = "/plugin_inspect"
       conn = multipart_connection
       payload =  {
         mysubmit: "Inspect",
-        passwd: password,
+        passwd: options[:password],
         archive: Faraday::UploadIO.new(pkg, 'application/octet-stream')
       }
       response = conn.post path, payload
@@ -42,41 +52,48 @@ module RokuBuilder
         dev_zip = /dev.zip:[^<]*<div[^>]*><font[^>]*>([^<]*)<\/font><\/div>/.match(response.body)[1]
       end
 
-      return {app_name: app_name, dev_id: dev_id, creation_date: Time.at(creation_date.to_i).to_s, dev_zip: dev_zip}
+      info = {app_name: app_name, dev_id: dev_id, creation_date: Time.at(creation_date.to_i).to_s, dev_zip: dev_zip}
+
+      inspect_logger = ::Logger.new(STDOUT)
+      inspect_logger.formatter = proc {|_severity, _datetime, _progname, msg|
+        "%s\n\r" % [msg]
+      }
+      inspect_logger.unknown "=============================================================="
+      inspect_logger.unknown "App Name: #{info[:app_name]}"
+      inspect_logger.unknown "Dev ID: #{info[:dev_id]}"
+      inspect_logger.unknown "Creation Date: #{info[:creation_date]}"
+      inspect_logger.unknown "dev.zip: #{info[:dev_zip]}"
+      inspect_logger.unknown "=============================================================="
 
     end
 
     # Capture a screencapture for the currently sideloaded app
     # @return [Boolean] Success
-    def screencapture(out_folder:, out_file: nil)
-      path = "/plugin_inspect"
-      conn = multipart_connection
+    def screencapture(options:)
+      out = @config.out
       payload =  {
         mysubmit: "Screenshot",
         passwd: @dev_password,
         archive: Faraday::UploadIO.new(File::NULL, 'application/octet-stream')
       }
-      response = conn.post path, payload
+      response = multipart_connection.post "/plugin_inspect", payload
 
       path = /<img src="([^"]*)">/.match(response.body)
-      return false unless path
+      raise ExecutionError, "Failed to capture screen" unless path
       path = path[1]
-      unless out_file
-        out_time = /time=([^"]*)">/.match(response.body)
-        out_ext = /dev.([^"]*)\?/.match(response.body)
-        out_file = "dev_#{out_time[1]}.#{out_ext[1]}" if out_time and out_ext
-        out_file = "dev.jpg" unless out_file
+
+      unless out[:file]
+        out[:file] = /time=([^"]*)">/.match(response.body)
+        out[:file] = "dev_#{out[:file][1]}.jpg" if out[:file]
       end
 
-      conn = simple_connection
+      response = simple_connection.get path
 
-      response = conn.get path
-
-      File.open(File.join(out_folder, out_file), "wb") do |io|
+      File.open(File.join(out[:folder], out[:file]), "w") do |io|
         io.write(response.body)
       end
-      @logger.info "Screen captured to #{File.join(out_folder, out_file)}"
-      return response.success?
+      @logger.info "Screen captured to #{File.join(out[:folder], out[:file])}"
     end
   end
+  RokuBuilder.register_plugin(Inspector)
 end

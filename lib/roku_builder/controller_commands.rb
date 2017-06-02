@@ -10,7 +10,6 @@ module RokuBuilder
     # @return [Hash] options to run simple commands
     def self.simple_commands
       {
-        delete: { klass: Loader, method: :unload },
         key: { klass: Keyer, method: :rekey, config_key: :key },
         genkey: { klass: Keyer, method: :genkey, config_key: :genkey },
         screencapture: { klass: Inspector, method: :screencapture, config_key: :screencapture_config,
@@ -18,28 +17,6 @@ module RokuBuilder
         applist: {klass: Linker, method: :list},
         profile: {klass: Profiler, method: :run, config_key: :profiler_config}
       }
-    end
-    # Run Sideload
-    # @param options [Hash] user options
-    # @param config [Config] parsed config
-    # @return [Integer] Success or Failure Code
-    def self.sideload(options:, config:)
-      device_config = config.parsed[:device_config].dup
-      device_config[:init_params] = config.parsed[:init_params][:loader]
-      stager = Stager.new(**config.parsed[:stage_config])
-      success = nil
-      if stager.stage
-        loader = Loader.new(**device_config)
-        build_version = Manifest.new(config:config).build_version
-        options[:build_version] = build_version
-        config.update
-        success = loader.sideload(**config.parsed[:sideload_config])[0]
-      end
-      stager.unstage
-      if success == SUCCESS
-        Logger.instance.info "App Sideloaded; staged using #{stager.method}"
-      end
-      success
     end
     # Run Package
     # @param options [Hash] user options
@@ -74,10 +51,6 @@ module RokuBuilder
       Logger.instance.info "App Packaged; staged using #{stager.method}"
       SUCCESS
     end
-    # Run Sideload
-    # @param options [Hash] user options
-    # @param config [Config] parsed config
-    # @return [Integer] Success or Failure Code
     def self.test(options:, config:)
       device_config = config.parsed[:device_config].dup
       device_config[:init_params] = config.parsed[:init_params][:tester]
@@ -90,43 +63,6 @@ module RokuBuilder
       SUCCESS
     end
 
-    def self.inspect_package(config:)
-      inspector = Inspector.new(**config.parsed[:device_config])
-      info = inspector.inspect(config.parsed[:inspect_config])
-      inspect_logger = ::Logger.new(STDOUT)
-      inspect_logger.formatter = proc {|_severity, _datetime, _progname, msg|
-        "%s\n\r" % [msg]
-      }
-      inspect_logger.unknown "=============================================================="
-      inspect_logger.unknown "App Name: #{info[:app_name]}"
-      inspect_logger.unknown "Dev ID: #{info[:dev_id]}"
-      inspect_logger.unknown "Creation Date: #{info[:creation_date]}"
-      inspect_logger.unknown "dev.zip: #{info[:dev_zip]}"
-      inspect_logger.unknown "=============================================================="
-    end
-    private_class_method :inspect_package
-
-    # Run Build
-    # @param options [Hash] user options
-    # @param config [Config] config object
-    # @return [Integer] Success or Failure Code
-    def self.build(options:, config:)
-      ### Build ###
-      loader_config = config.parsed[:device_config].dup
-      loader_config[:init_params] = config.parsed[:init_params][:loader]
-      stager = Stager.new(**config.parsed[:stage_config])
-      loader = Loader.new(**loader_config)
-      if stager.stage
-        build_version = Manifest.new(config:config).build_version
-        options[:build_version] = build_version
-        config.update
-        outfile = loader.build(**config.parsed[:build_config])
-        Logger.instance.info "Build: #{outfile}"
-      end
-      stager.unstage
-      Logger.instance.info "App build; staged using #{stager.method}"
-      SUCCESS
-    end
     # Run update
     # @param config [Config] config object
     # @return [Integer] Success or Failure Code

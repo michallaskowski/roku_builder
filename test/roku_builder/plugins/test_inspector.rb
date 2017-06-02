@@ -2,15 +2,26 @@
 
 require_relative "../test_helper.rb"
 module RokuBuilder
-  class InspectorTest # skip tests for now < Minitest::Test
+  class InspectorTest < Minitest::Test
     def setup
-      @config = build_config_object(InspectorTest)
+      Logger.set_testing
+      RokuBuilder.setup_plugins
+      register_plugins(Inspector)
       @requests = []
     end
     def teardown
       @requests.each {|req| remove_request_stub(req)}
     end
     def test_inspector_inspect
+      logger = Minitest::Mock.new()
+
+      logger.expect(:formatter=, nil, [Proc])
+      logger.expect(:unknown, nil){|text| /=*/ =~ text}
+      logger.expect(:unknown, nil){|text| /app_name/ =~ text}
+      logger.expect(:unknown, nil){|text| /dev_id/ =~ text}
+      logger.expect(:unknown, nil){|text| /#{Time.at(628232400).to_s}/ =~ text}
+      logger.expect(:unknown, nil){|text| /dev_zip/ =~ text}
+      logger.expect(:unknown, nil){|text| /=*/ =~ text}
 
       body = "r1.insertCell(0).innerHTML = 'App Name: ';"+
         "      r1.insertCell(1).innerHTML = '<div class=\"roku-color-c3\">app_name</div>';"+
@@ -44,16 +55,23 @@ module RokuBuilder
       @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
         to_return(status: 200, body: body, headers: {}))
 
-      inspector = Inspector.new(config: @config)
-      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: "password")
-
-      assert_equal "app_name", package_info[:app_name]
-      assert_equal "dev_id", package_info[:dev_id]
-      assert_equal Time.at(628232400).to_s, package_info[:creation_date]
-      assert_equal "dev_zip", package_info[:dev_zip]
-
+      options = {inspect: true, in: File.join(test_files_path(InspectorTest), "test.pkg"), password: "password"}
+      config, options = build_config_options_objects(InspectorTest, options, false)
+      inspector = Inspector.new(config: config)
+      ::Logger.stub(:new, logger) do
+        inspector.inspect(options: options)
+      end
     end
     def test_inspector_inspect_old_interface
+      logger = Minitest::Mock.new()
+
+      logger.expect(:formatter=, nil, [Proc])
+      logger.expect(:unknown, nil){|text| /=*/ =~ text}
+      logger.expect(:unknown, nil){|text| /app_name/ =~ text}
+      logger.expect(:unknown, nil){|text| /dev_id/ =~ text}
+      logger.expect(:unknown, nil){|text| /#{Time.at(628232400).to_s}/ =~ text}
+      logger.expect(:unknown, nil){|text| /dev_zip/ =~ text}
+      logger.expect(:unknown, nil){|text| /=*/ =~ text}
       body = " <table cellpadding=\"2\">"+
         " <tbody><tr><td> App Name: </td><td> <font color=\"blue\">app_name</font> </td></tr>"+
         " <tr><td> Dev ID: </td><td> <font face=\"Courier\" color=\"blue\">dev_id</font> </td></tr>"+
@@ -79,21 +97,15 @@ module RokuBuilder
       @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
         to_return(status: 200, body: body, headers: {}))
 
-      inspector = Inspector.new(config: @config)
-      package_info = inspector.inspect(pkg: File.join(test_files_path(InspectorTest), "test.pkg"), password: "password")
-
-      assert_equal "app_name", package_info[:app_name]
-      assert_equal "dev_id", package_info[:dev_id]
-      assert_equal Time.at(628232400).to_s, package_info[:creation_date]
-      assert_equal "dev_zip", package_info[:dev_zip]
+      options = {inspect: true, in: File.join(test_files_path(InspectorTest), "test.pkg"), password: "password"}
+      config, options = build_config_options_objects(InspectorTest, options, false)
+      inspector = Inspector.new(config: config)
+      ::Logger.stub(:new, logger) do
+        inspector.inspect(options: options)
+      end
     end
 
     def test_screencapture
-      screencapture_config = {
-        out_folder: "out/folder/path",
-        out_file: nil
-      }
-
       body = "<hr /><img src=\"pkgs/dev.jpg?time=1455629573\">"
       @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
         to_return(status: 200, body: body, headers: {}))
@@ -106,12 +118,12 @@ module RokuBuilder
       io.expect("write", nil, [body2])
 
       success = false
-      inspector = Inspector.new(config: @config)
+      options = {screencapture: true }
+      config, options = build_config_options_objects(InspectorTest, options, false)
+      inspector = Inspector.new(config: config)
       File.stub(:open, nil, io) do
-        success = inspector.screencapture(**screencapture_config)
+        inspector.screencapture(options: options)
       end
-
-      assert success
     end
     def test_screencapture_png
       connection = Minitest::Mock.new
