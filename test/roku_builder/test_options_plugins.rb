@@ -60,7 +60,7 @@ module RokuBuilder
       assert_includes options.send(:commands), :test
       RokuBuilder.class_variable_set(:@@plugins, nil)
     end
-    def test_options_plugins_commands_source
+    def test_options_plugins_commands_source_2
       RokuBuilder.class_variable_set(:@@plugins, nil)
       RokuBuilder.register_plugin(OptionsTestPlugin2)
       options = Options.allocate
@@ -68,7 +68,7 @@ module RokuBuilder
       refute_includes options.send(:source_commands), :test
       RokuBuilder.class_variable_set(:@@plugins, nil)
     end
-    def test_options_plugins_commands_device
+    def test_options_plugins_commands_device_2
       RokuBuilder.class_variable_set(:@@plugins, nil)
       RokuBuilder.register_plugin(OptionsTestPlugin2)
       options = Options.allocate
@@ -76,7 +76,7 @@ module RokuBuilder
       refute_includes options.send(:device_commands), :test
       RokuBuilder.class_variable_set(:@@plugins, nil)
     end
-    def test_options_plugins_commands_exclude
+    def test_options_plugins_commands_exclude_2
       RokuBuilder.class_variable_set(:@@plugins, nil)
       RokuBuilder.register_plugin(OptionsTestPlugin2)
       options = Options.allocate

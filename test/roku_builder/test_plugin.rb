@@ -23,9 +23,9 @@ module RokuBuilder
     def test_module_dependencies
       assert_equal Array, TestClass.dependencies.class
     end
-    def test_module_dependencies
+    def test_module_dependencies_dependent
       assert_equal Array, TestClass2.dependencies.class
-      assert_equal "test", TestClass2.dependencies[0]
+      assert_equal TestClass, TestClass2.dependencies[0]
     end
   end
   class TestClass
@@ -38,7 +38,7 @@ module RokuBuilder
     def self.parse_options(option_parser:, options:)
     end
     def self.dependencies
-      ["test"]
+      [TestClass]
     end
   end
 end

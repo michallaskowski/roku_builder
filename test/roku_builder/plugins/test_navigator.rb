@@ -57,7 +57,7 @@ module RokuBuilder
               to_return(status: 200, body: "", headers: {}))
           end
         end
-      end if
+      end
       options = {}
       options[type] = input.to_s
       config, options = build_config_options_objects(NavigatorTest, options, false)

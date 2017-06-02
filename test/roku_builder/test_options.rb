@@ -4,6 +4,9 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class OptionsTest < Minitest::Test
+    def setup
+      RokuBuilder.class_variable_set(:@@plugins, [])
+    end
     def test_options_initialize_no_params
       count = 0
       parse_stub = lambda{ count+= 1; {validate: true} }

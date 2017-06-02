@@ -1,5 +1,4 @@
- # ********** Copyright Viacom, Inc. Apache 2.0 **********
-
+# ********** Copyright Viacom, Inc. Apache 2.0 **********
 module RokuBuilder
 
   # Super class for modules
@@ -16,7 +15,6 @@ module RokuBuilder
       @dev_username = @config.device_config[:user]
       @dev_password = @config.device_config[:password]
       @url = "http://#{@roku_ip_address}"
-      key = self.class.to_s.split("::")[-1].underscore.to_sym
       init
     end
 

@@ -130,7 +130,7 @@ module RokuBuilder
       RokuBuilder.register_plugin(TestPlugin3)
       RokuBuilder.process_plugins
     end
-    def test_roku_builder_plugins_dependencies
+    def test_roku_builder_plugins_dependencies_missing
       RokuBuilder.register_plugin(TestPlugin3)
       assert_raises ImplementationError do
         RokuBuilder.process_plugins
@@ -146,7 +146,7 @@ module RokuBuilder
   class TestPlugin3
     extend Plugin
     def self.dependencies
-      ["test"]
+      [TestPlugin]
     end
   end
 end

@@ -105,7 +105,6 @@ module RokuBuilder
     end
 
     def test_stager_stage_git_error_stage
-      branch_name = 'production'
       build_config_options({validate: true, stage: "production"})
       git = Minitest::Mock.new
       branch = Minitest::Mock.new
@@ -140,7 +139,6 @@ module RokuBuilder
     end
 
     def test_stager_stage_git_error_unstage
-      branch_name = 'production'
       build_config_options({validate: true, stage: "production"})
       git = Minitest::Mock.new
       logger = Minitest::Mock.new
@@ -197,7 +195,6 @@ module RokuBuilder
     end
 
     def test_stager_load_state
-      branch_name = 'production'
       build_config_options({validate: true, stage: "production"})
       git = Minitest::Mock.new
       branch = Minitest::Mock.new
@@ -234,7 +231,6 @@ module RokuBuilder
     end
 
     def test_stager_load_second_state
-      branch_name = 'production'
       build_config_options({validate: true, stage: "production"})
       git = Minitest::Mock.new
       branch = Minitest::Mock.new

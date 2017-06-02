@@ -31,7 +31,6 @@ module RokuBuilder
       # To be removed
       setup_sideload_config
       setup_package_config
-      setup_monitor_configs
       setup_manifest_config
       setup_deeplink_configs
       setup_text_configs
@@ -250,15 +249,6 @@ module RokuBuilder
       if @parsed[:out][:file]
         @parsed[:package_config][:out_file] = File.join(@parsed[:out][:folder], @parsed[:out][:file])
         @parsed[:inspect_config][:pkg] = File.join(@parsed[:out][:folder], @parsed[:out][:file])
-      end
-    end
-
-    def setup_monitor_configs
-      if @options[:monitor]
-        @parsed[:monitor_config] = {type: @options[:monitor].to_sym}
-        if @options[:regexp]
-          @parsed[:monitor_config][:regexp] = /#{@options[:regexp]}/
-        end
       end
     end
 

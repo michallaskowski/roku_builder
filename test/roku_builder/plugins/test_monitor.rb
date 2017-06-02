@@ -5,6 +5,7 @@ require_relative "../test_helper.rb"
 module RokuBuilder
   class MonitorTest < Minitest::Test
     def setup
+      Logger.set_testing
       RokuBuilder.setup_plugins
       unless RokuBuilder.plugins.include?(Monitor)
         RokuBuilder.register_plugin(Monitor)
