@@ -16,22 +16,21 @@ module RokuBuilder
       }
     end
 
-    def self.parse_options(options_parser:, options:)
-      options_parser.seperator("Navigator Commands:")
-      options_parser.on("-N", "--nav CMD", "Send the given command to the roku") do |n|
+    def self.parse_options(parser:, options:)
+      parser.seperator("Navigator Commands:")
+      parser.on("-N", "--nav CMD", "Send the given command to the roku") do |n|
         options[:nav] = n
       end
-      options_parser.on("--navigate", "Run interactive navigator") do
+      parser.on("--navigate", "Run interactive navigator") do
         options[:navigate] = true
       end
-      options_parser.on("-y", "--type TEXT", "Type the given text on the roku device") do |t|
+      parser.on("-y", "--type TEXT", "Type the given text on the roku device") do |t|
         options[:type] = t
       end
-      options_parser.on("--screen SCREEN", "Show a screen") do |s|
+      parser.on("--screen SCREEN", "Show a screen") do |s|
         options[:screen] = s
       end
-
-      options_parser.on("--screens", "Show possible screens") do
+      parser.on("--screens", "Show possible screens") do
         options[:screens] = true
       end
     end

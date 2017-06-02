@@ -4,25 +4,33 @@ module RokuBuilder
 
   # Monitor development Logs
   class Monitor < Util
+    extend Plugin
+
+    def self.commands
+      { monitor: {device: true}}
+    end
+
+    def self.parse_options(parser:, options:)
+      parser.on("-m", "--monitor [TYPE]", "Command: run telnet to monitor roku log") do |m|
+        options[:monitor] = m || "main"
+      end
+      parser.on("-r", "--regexp REGEXP", "A regular expression used to filter monitor logs") do |r|
+        options[:regexp] = r
+      end
+    end
 
     # Initialize port config
     def init()
       @ports = {
         main: 8085,
-        sg: 8089,
-        task1: 8090,
-        task2: 8091,
-        task3: 8092,
-        taskX: 8093,
         profiler: 8080,
       }
       @show_prompt = false
     end
 
     # Monitor a development log on the Roku device
-    # @param type [Symbol] The log type to monitor
-    # @param regexp [Regexp] regular expression to filter text on
-    def monitor(type:, regexp: nil)
+    def monitor(options: options)
+      type = options[:monitor]
       telnet_config = { 'Host' => @roku_ip_address, 'Port' => @ports[type] }
       waitfor_config = { 'Match' => /./, 'Timeout' => false }
 
@@ -33,7 +41,7 @@ module RokuBuilder
         all_text = ""
         while true
           connection.waitfor(waitfor) do |txt|
-            all_text = manage_text(all_text: all_text, txt: txt, regexp: regexp)
+            all_text = manage_text(all_text: all_text, txt: txt, regexp: options[:regexp])
           end
         end
       }
@@ -118,4 +126,5 @@ module RokuBuilder
       all_text
     end
   end
+  RokuBuilder.register_plugin(Monitor)
 end

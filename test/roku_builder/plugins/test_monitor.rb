@@ -3,10 +3,14 @@
 require_relative "../test_helper.rb"
 
 module RokuBuilder
-  class MonitorTest # skip tests for now < Minitest::Test
+  class MonitorTest < Minitest::Test
     def setup
-      options = build_options
-      @config = Config.new(options: options)
+      RokuBuilder.setup_plugins
+      unless RokuBuilder.plugins.include?(Monitor)
+        RokuBuilder.register_plugin(Monitor)
+      end
+      @options = build_options({monitor: "main"}, false)
+      @config = Config.new(options: @options)
       @connection = Minitest::Mock.new
       device_config = {
         ip: "111.222.333",
@@ -32,7 +36,7 @@ module RokuBuilder
 
       Readline.stub(:readline, readline) do
         Net::Telnet.stub(:new, @connection) do
-          @monitor.monitor(type: :main)
+          @monitor.monitor(options: @options)
         end
       end
 
@@ -56,7 +60,7 @@ module RokuBuilder
       Readline.stub(:readline, readline) do
         Net::Telnet.stub(:new, @connection) do
           @monitor.stub(:manage_text, "") do
-            @monitor.monitor(type: :main)
+            @monitor.monitor(options: @options)
           end
         end
       end
@@ -88,7 +92,7 @@ module RokuBuilder
 
       Readline.stub(:readline, readline) do
         Net::Telnet.stub(:new, @connection) do
-          @monitor.monitor(type: :main)
+          @monitor.monitor(options: @options)
         end
       end
     end

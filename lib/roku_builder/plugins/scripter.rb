@@ -10,12 +10,12 @@ module RokuBuilder
       {print: {source: true}}
     end
 
-    def self.parse_options(option_parser:, options:)
-      option_parser.seperator("Commands for Scripter Plugin:")
-       option_parser.on("--print ATTRIBUTE", "Print attribute for scripting") do |a|
-         byebug
-         options[:print] = a.to_sym
-       end
+    def self.parse_options(parser:, options:)
+      parser.seperator("Commands for Scripter Plugin:")
+      parser.on("--print ATTRIBUTE", "Print attribute for scripting") do |a|
+        byebug
+        options[:print] = a.to_sym
+      end
     end
 
     def initialize(config:)
