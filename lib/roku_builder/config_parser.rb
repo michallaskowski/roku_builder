@@ -31,11 +31,7 @@ module RokuBuilder
       # To be removed
       setup_package_config
       setup_manifest_config
-      setup_deeplink_configs
-      setup_text_configs
       setup_test_configs
-      setup_screencapture_configs
-      setup_profiler_configs
       setup_genkey_configs
     end
 
@@ -228,15 +224,6 @@ module RokuBuilder
       }
     end
 
-    def setup_deeplink_configs
-      @parsed[:deeplink_config] = {options: @options[:deeplink]}
-      if @options[:app_id]
-        @parsed[:deeplink_config][:app_id] = @options[:app_id]
-      end
-    end
-    def setup_text_configs
-      @parsed[:text_config] = {text: @options[:text]}
-    end
     def setup_test_configs
       @parsed[:test_config] = {sideload_config: @parsed[:sideload_config]}
       @parsed[:init_params][:tester] = { root_dir: get_root_dir }

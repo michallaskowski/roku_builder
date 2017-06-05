@@ -4,15 +4,40 @@ module RokuBuilder
 
   # Launch application, sending parameters
   class Linker < Util
+    extend Plugin
+
+    def self.commands
+      {
+        deeplink: {device: true},
+        applist: {device: true}
+      }
+    end
+
+    def self.parse_options(parser:,  options:)
+      parser.on("-o", "--deeplink OPTIONS", "Command: Deeplink into app. Define options as keypairs. (eg. a:b, c:d,e:f)") do |o|
+        options[:deeplink] = o
+      end
+      parser.on("-A", "--app-list", "Command: List currently installed apps") do
+        options[:applist] = true
+      end
+      parser.on("-a", "--app ID", "Send App id for deeplinking") do |a|
+        options[:app_id] = a
+      end
+    end
+
+    def self.dependencies
+      [Loader]
+    end
+
     # Deeplink to an app
-    # @param options [String] Options string
-    # @param app_id [String] Id of the app to launch (defaults to dev)
-    # @param logger [Logger] System Logger
-    # @note Options string should be formated like the following: "<key>:<value>[, <key>:<value>]*"
-    # @note Any options will be accepted and sent to the app
-    def launch(options: nil, app_id: "dev")
+    def deeplink(options:)
+      if options.has_source?
+        Loader.new(config: @config).sideload(options: options)
+      end
+      app_id = options[:app_id]
+      app_id ||= "dev"
       path = "/launch/#{app_id}"
-      payload = RokuBuilder.options_parse(options: options)
+      payload = RokuBuilder.options_parse(options: options[:deeplink])
 
       unless payload.keys.count > 0
         @logger.warn "No options sent to launched app"
@@ -25,15 +50,13 @@ module RokuBuilder
         @logger.info "curl -d '' '#{@url}:8060#{path}'"
       end
 
-      conn = multipart_connection(port: 8060)
-
-      response = conn.post path
-      return response.success?
+      response = multipart_connection(port: 8060).post path
+      @logger.fatal("Failed Deeplinking") unless response.success?
     end
 
     # List currently installed apps
     # @param logger [Logger] System Logger
-    def list()
+    def applist(options:)
       path = "/query/apps"
       conn = multipart_connection(port: 8060)
       response = conn.get path

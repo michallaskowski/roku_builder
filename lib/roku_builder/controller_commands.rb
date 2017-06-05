@@ -12,10 +12,6 @@ module RokuBuilder
       {
         key: { klass: Keyer, method: :rekey, config_key: :key },
         genkey: { klass: Keyer, method: :genkey, config_key: :genkey },
-        screencapture: { klass: Inspector, method: :screencapture, config_key: :screencapture_config,
-          failure: FAILED_SCREENCAPTURE },
-        applist: {klass: Linker, method: :list},
-        profile: {klass: Profiler, method: :run, config_key: :profiler_config}
       }
     end
     # Run Package
@@ -78,23 +74,6 @@ module RokuBuilder
       end
       stager.unstage
       SUCCESS
-    end
-
-    # Run Deeplink
-    # @param options [Hash] user options
-    # @param config [Config] config object
-    def self.deeplink(options:, config:)
-      if options.has_source?
-        sideload(options: options, config: config)
-      end
-
-      linker = Linker.new(config.parsed[:device_config])
-      if linker.launch(config.parsed[:deeplink_config])
-        Logger.instance.info "Deeplinked into app"
-        return SUCCESS
-      else
-        return FAILED_DEEPLINKING
-      end
     end
   end
 end
