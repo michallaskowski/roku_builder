@@ -24,7 +24,7 @@ module RokuBuilder
     end
 
     def source_command?
-      (source_commands & keys).count > 0
+      source_commands.include?(command)
     end
 
     def device_command?
@@ -188,17 +188,12 @@ module RokuBuilder
     # @return [Array<Symbol>] List of command symbols that can be used in the options hash
     def commands
       @commands ||= [:configure, :validate, :dostage, :dounstage]
-        #[:sideload, :package, :test, :deeplink,:configure, :validate, :delete,
-        #:navigate, :navigator, :text, :build, :monitor, :update, :screencapture,
-        #:key, :genkey, :screen, :screens, :applist, :print, :profile, :dostage,
-        #:dounstage]
     end
 
     # List of depricated options
     # @return [Hash] Hash of depricated options and the warning message for each
     def depricated_options
       @depricated_options ||= {}
-      #{deeplink_depricated: "-L and --deeplink are depricated. Use -o or --deeplink-options." }
     end
 
     # List of source options
@@ -211,22 +206,18 @@ module RokuBuilder
     # @return [Array<Symbol>] List of command symbols that require a source in the options hash
     def source_commands
       @source_commands ||= []
-      #[:sideload, :package, :test, :build, :key, :update, :print]
     end
 
     # List of commands the activate the exclude files
     # @return [Array<Symbol] List of commands the will activate the exclude files lists
     def exclude_commands
       @exclude_commands ||= []
-      #[:build, :package]
     end
 
     # List of commands that require a device
     # @return [Array<Symbol>] List of commands that require a device
     def device_commands
       @device_commands ||= []
-      #[:sideload, :package, :test, :deeplink, :delete, :navigate, :navigator,
-      #  :text, :monitor, :screencapture, :applist, :profile, :key, :genkey ]
     end
   end
 end

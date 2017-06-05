@@ -58,7 +58,7 @@ module RokuBuilder
 
     def project_required
       non_project_source = ([:current, :in] & @options.keys).count > 0
-      @options.source_command? and not non_project_source
+      @options.has_source? and not non_project_source
     end
 
     def current_project
