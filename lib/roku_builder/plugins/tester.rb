@@ -6,10 +6,24 @@ module RokuBuilder
   # This is intended to be used with the brstest librbary but should work
   # with other testing libraries
   class Tester < Util
+    extend Plugin
+
+    def self.commands
+      {test: {device: true, source: true}}
+    end
+
+    def self.parse_options(parser:, options:)
+      parser.on("-t", "--test", "Command: Test an app") do
+        options[:test] = true
+      end
+    end
+
+    def self.dependencies
+      [Loader, Linker]
+    end
 
     # Initialize starting and ending regular expressions
     def init()
-      @root_dir = @config.root_dir
       @end_reg = /\*+\s*End testing\s*\*+/
       @start_reg = /\*+\s*Start testing\s*\*+/
       @test_logger = ::Logger.new(STDOUT)
@@ -22,18 +36,17 @@ module RokuBuilder
 
     # Run tests and report results
     # @param sideload_config [Hash] The config for sideloading the app
-    def run_tests(sideload_config:)
+    def test(options:)
+      loader = Loader.new(config: @config)
+      loader.sideload(options: options)
+      linker = Linker.new(config: @config)
+      linker.deeplink(options: Options.new(options: {deeplink: "RunTests:true"}))
+
       telnet_config ={
         'Host' => @roku_ip_address,
         'Port' => 8085
       }
-
-      loader = Loader.new(config: @config)
       connection = Net::Telnet.new(telnet_config)
-      loader.sideload(**sideload_config)
-      linker = Linker.new(config: @config)
-      linker.launch(options: "RunTests:true")
-
       connection.waitfor(@end_reg) do |txt|
         handle_text(txt: txt)
       end

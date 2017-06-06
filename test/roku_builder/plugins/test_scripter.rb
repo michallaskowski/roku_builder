@@ -24,7 +24,6 @@ module RokuBuilder
       options = {print: :root_dir, working: true}
       @config, @options = build_config_options_objects(ScripterTest, options, false)
       call_count = 0
-      code = nil
       fake_print = lambda { |message, path|
         assert_equal "%s", message
         assert_equal @config.parsed[:root_dir], path
@@ -40,7 +39,6 @@ module RokuBuilder
       options = {print: :app_name, working: true}
       @config, @options = build_config_options_objects(ScripterTest, options, false)
       call_count = 0
-      code = nil
       fake_print = lambda { |message, value|
         assert_equal "%s", message
         assert_equal "<app name>", value
@@ -57,7 +55,6 @@ module RokuBuilder
       options = {print: :title, working: true}
       @config, @options = build_config_options_objects(ScripterTest, options, false)
       call_count = 0
-      code = nil
       fake_print = lambda { |message, title|
         assert_equal "%s", message
         assert_equal "Test", title
@@ -74,7 +71,6 @@ module RokuBuilder
       options = {print: :build_version, working: true}
       @config, @options = build_config_options_objects(ScripterTest, options, false)
       call_count = 0
-      code = nil
       fake_print = lambda { |message, build|
         assert_equal "%s", message
         assert_equal "010101.1", build
@@ -91,7 +87,6 @@ module RokuBuilder
       options = {print: :app_version, working: true}
       @config, @options = build_config_options_objects(ScripterTest, options, false)
       call_count = 0
-      code = nil
       fake_print = lambda { |message, major, minor|
         assert_equal "%s.%s", message
         assert_equal "1", major

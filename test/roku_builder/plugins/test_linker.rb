@@ -37,6 +37,23 @@ module RokuBuilder
       linker = Linker.new(config: config)
       linker.deeplink(options: options)
     end
+    def test_linker_link_sideload_current
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/launch/dev?a=A&b=B:C&d=a%5Cb").
+        to_return(status: 200, body: "", headers: {}))
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Home").
+        to_return(status: 200, body: "", headers: {}))
+      @requests.push(stub_request(:post, "http://192.168.0.100/plugin_install").
+        to_return(status: 200, body: "Install Success", headers: {}))
+
+      options = {deeplink: 'a:A, b:B:C, d:a\b',  current: true}
+      config = nil
+      Pathname.stub(:pwd, test_files_path(LinkerTest)) do
+        config, options = build_config_options_objects(LinkerTest, options, false)
+      end
+
+      linker = Linker.new(config: config)
+      linker.deeplink(options: options)
+    end
     def test_linker_link_app
       @requests.push(stub_request(:post, "http://192.168.0.100:8060/launch/1234?a=A&b=B:C&d=a%5Cb").
         to_return(status: 200, body: "", headers: {}))

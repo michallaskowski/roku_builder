@@ -2,75 +2,60 @@
 require_relative "../test_helper.rb"
 
 module RokuBuilder
-  class TesterTest # skip tests for now < Minitest::Test
+  class TesterTest < Minitest::Test
     def setup
-      options = build_options
-      @config = Config.new(options: options)
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password",
-      }
-      @loader_config = {
-        root_dir: "root/dir/path",
-        branch: "branch",
-        folders: ["source"],
-        files: ["manifest"]
-      }
-      @config.instance_variable_set(:@parsed, {device_config: device_config})
+      Logger.set_testing
+      RokuBuilder.setup_plugins
+      register_plugins(Tester)
       @connection = Minitest::Mock.new
-      @loader = Minitest::Mock.new
-      @linker = Minitest::Mock.new
+      @requests = []
 
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Home").
+        to_return(status: 200, body: "", headers: {}))
+      @requests.push(stub_request(:post, "http://192.168.0.100/plugin_install").
+        to_return(status: 200, body: "Install Success", headers: {}))
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/launch/dev?RunTests=true").
+        to_return(status: 200, body: "", headers: {}))
     end
     def teardown
       @connection.verify
-      @linker.verify
-      @loader.verify
+      @requests.each {|req| remove_request_stub(req)}
     end
     def test_tester_runtests
-      tester = Tester.new(config: @config)
+      config, options = build_config_options_objects(TesterTest, {test: true, working: true}, false)
+      tester = Tester.new(config: config)
 
-      @loader.expect(:sideload, nil, [@loader_config])
-      @linker.expect(:launch, nil, [{options: "RunTests:true"}])
       @connection.expect(:waitfor, nil, [/\*+\s*End testing\s*\*+/])
       @connection.expect(:puts, nil, ["cont\n"])
 
-      Loader.stub(:new, @loader) do
-        Linker.stub(:new, @linker) do
-          Net::Telnet.stub(:new, @connection) do
-            tester.run_tests(sideload_config: @loader_config)
-          end
-        end
+      Net::Telnet.stub(:new, @connection) do
+        tester.test(options: options)
       end
     end
 
     def test_tester_runtests_and_handle
+      config, options = build_config_options_objects(TesterTest, {test: true, working: true}, false)
+      tester = Tester.new(config: config)
+
       waitfor = Proc.new do |end_reg, &blk|
         assert_equal(/\*+\s*End testing\s*\*+/, end_reg)
         txt = "Fake Text"
         blk.call(txt) == false
       end
 
-      tester = Tester.new(config: @config)
-      @loader.expect(:sideload, nil, [@loader_config])
-      @linker.expect(:launch, nil, [{options: "RunTests:true"}])
       @connection.expect(:waitfor, nil, &waitfor)
       @connection.expect(:puts, nil, ["cont\n"])
 
-      Loader.stub(:new, @loader) do
-        Net::Telnet.stub(:new, @connection) do
-          Linker.stub(:new, @linker) do
-            tester.stub(:handle_text, false) do
-              tester.run_tests(sideload_config: @loader_config)
-            end
-          end
+      Net::Telnet.stub(:new, @connection) do
+        tester.stub(:handle_text, false) do
+          tester.test(options: options)
         end
       end
     end
 
     def test_tester_handle_text_no_text
-      tester = Tester.new(config: @config)
+      config = build_config_options_objects(TesterTest, {test: true, working: true}, false)[0]
+      tester = Tester.new(config: config)
 
       text = "this\nis\na\ntest\nparagraph"
       tester.send(:handle_text, {txt: text})
@@ -79,7 +64,8 @@ module RokuBuilder
     end
 
     def test_tester_handle_text_all_text
-      tester = Tester.new(config: @config)
+      config = build_config_options_objects(TesterTest, {test: true, working: true}, false)[0]
+      tester = Tester.new(config: config)
       tester.instance_variable_set(:@in_tests, true)
 
       text = ["this","is","a","test","paragraph"]
@@ -90,7 +76,8 @@ module RokuBuilder
     end
 
     def test_tester_handle_text_partial_text
-      tester = Tester.new(config: @config)
+      config = build_config_options_objects(TesterTest, {test: true, working: true}, false)[0]
+      tester = Tester.new(config: config)
 
       text = ["this","*Start testing*","is","a","test","*End testing*","paragraph"]
       verify_text = ["***************","***************","*Start testing*","is","a","test","*End testing*","*************","*************"]
@@ -101,7 +88,8 @@ module RokuBuilder
     end
 
     def test_tester_handle_text_used_connection
-      tester = Tester.new(config: @config)
+      config = build_config_options_objects(TesterTest, {test: true, working: true}, false)[0]
+      tester = Tester.new(config: config)
 
       text = ["connection already in use"]
 

@@ -11,7 +11,7 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      parser.seperator("Commands for Scripter Plugin:")
+      parser.separator("Commands for Scripter Plugin:")
       parser.on("--print ATTRIBUTE", "Print attribute for scripting") do |a|
         byebug
         options[:print] = a.to_sym

@@ -15,16 +15,16 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      opts.on("-l", "--sideload", "Command: Sideload an app") do
+      parser.on("-l", "--sideload", "Command: Sideload an app") do
         options[:sideload] = true
       end
-      opts.on("-d", "--delete", "Command: Delete the currently sideloaded app") do
+      parser.on("-d", "--delete", "Command: Delete the currently sideloaded app") do
         options[:delete] = true
       end
-      opts.on("-b", "--build", "Command: build a zip to be sideloaded") do
+      parser.on("-b", "--build", "Command: build a zip to be sideloaded") do
         options[:build] = true
       end
-      opts.on("-x", "--exclude", "Apply exclude config to sideload") do
+      parser.on("-x", "--exclude", "Apply exclude config to sideload") do
         options[:exclude] = true
       end
     end

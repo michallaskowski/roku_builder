@@ -28,11 +28,6 @@ module RokuBuilder
       setup_stage_config
       setup_key_config
       setup_root_dir
-      # To be removed
-      setup_package_config
-      setup_manifest_config
-      setup_test_configs
-      setup_genkey_configs
     end
 
     def process_in_argument
@@ -130,7 +125,8 @@ module RokuBuilder
 
     def stub_project_config_for_current
       pwd =  Pathname.pwd.to_s
-      raise ParseError, "Missing Manifest" unless File.exist?(File.join(pwd, "manifest"))
+      manifest = File.join(pwd, "manifest")
+      raise ParseError, "Missing Manifest: #{manifest}" unless File.exist?(manifest)
       @parsed[:project] = {
         directory: pwd,
         folders: nil,
@@ -144,7 +140,7 @@ module RokuBuilder
         @parsed[:project][:directory] = File.join(@config[:projects][:project_dir], @parsed[:project][:directory])
       end
       unless Dir.exist?(@parsed[:project][:directory])
-        raise ParseError, "Missing project dirtectory: #{@parsed[:project][:dirtectory]}"
+        raise ParseError, "Missing project directory: #{@parsed[:project][:directory]}"
       end
     end
 
@@ -159,24 +155,6 @@ module RokuBuilder
         stage ||= @parsed[:project][:stages].keys[0].to_sym
         raise ParseError, "Unknown Stage: #{stage}" unless @parsed[:project][:stages][stage]
         @parsed[:stage] = @parsed[:project][:stages][stage]
-      end
-    end
-
-    def setup_root_dir
-      @parsed[:root_dir] = get_root_dir
-    end
-
-    def get_root_dir
-      root_dir = @parsed[:project][:directory] if @parsed[:project]
-      root_dir = @options[:in] if @options[:in]
-      root_dir = Pathname.pwd.to_s if @options[:current]
-      root_dir
-    end if
-
-    def setup_package_config
-      if @options[:package]
-        setup_package_config_hashes
-        setup_package_config_out_files
       end
     end
 
@@ -195,55 +173,22 @@ module RokuBuilder
         @parsed[:key][:keyed_pkg] = File.join(@config[:keys][:key_dir], @parsed[:key][:keyed_pkg])
       end
     end
+
     def test_key_file
       unless File.exist?(@parsed[:key][:keyed_pkg])
         raise ParseError, "Bad key file: #{@parsed[:key][:keyed_pkg]}"
       end
     end
 
-    def setup_package_config_hashes
-      @parsed[:package_config] = {
-        password: @parsed[:key][:password],
-        app_name_version: "#{@parsed[:project][:app_name]} - #{@parsed[:stage]}"
-      }
-      @parsed[:inspect_config] = {
-        password: @parsed[:key][:password]
-      }
+    def setup_root_dir
+      @parsed[:root_dir] = get_root_dir
     end
 
-    def setup_package_config_out_files
-      if @parsed[:out][:file]
-        @parsed[:package_config][:out_file] = File.join(@parsed[:out][:folder], @parsed[:out][:file])
-        @parsed[:inspect_config][:pkg] = File.join(@parsed[:out][:folder], @parsed[:out][:file])
-      end
-    end
-
-    def setup_manifest_config
-      @parsed[:manifest_config] = {
-        root_dir: get_root_dir
-      }
-    end
-
-    def setup_test_configs
-      @parsed[:test_config] = {sideload_config: @parsed[:sideload_config]}
-      @parsed[:init_params][:tester] = { root_dir: get_root_dir }
-    end
-    def setup_screencapture_configs
-      @parsed[:screencapture_config] = {
-        out_folder: @parsed[:out][:folder],
-        out_file: @parsed[:out][:file]
-      }
-    end
-    def setup_profiler_configs
-      if @options[:profile]
-        @parsed[:profiler_config] = {command: @options[:profile].to_sym}
-      end
-    end
-    def setup_genkey_configs
-      @parsed[:genkey] = {}
-      if @options[:out_file]
-        @parsed[:genkey][:out_file] = File.join(@options[:out_folder], @options[:out_file])
-      end
+    def get_root_dir
+      root_dir = @parsed[:project][:directory] if @parsed[:project]
+      root_dir = @options[:in] if @options[:in]
+      root_dir = Pathname.pwd.to_s if @options[:current]
+      root_dir
     end
   end
 end

@@ -57,12 +57,7 @@ module RokuBuilder
       parser = build_parser(options: options)
       add_plugin_options(parser: parser, options:options)
       validate_parser(parser: parser)
-      begin
-        parser.parse!
-      rescue StandardError => e
-        @logger.fatal e.message
-        exit
-      end
+      parser.parse!
       options
     end
 
@@ -103,7 +98,6 @@ module RokuBuilder
         end
         opts.on("-s", "--stage STAGE", "Set the stage to use. Default: 'production'") do |b|
           options[:stage] = b
-          options[:set_stage] = true
         end
         opts.on("-P", "--project ID", "Use a different project") do |p|
           options[:project] = p
@@ -149,14 +143,16 @@ module RokuBuilder
       stack = parser.instance_variable_get(:@stack)
       stack.each do |optionsList|
         optionsList.each_option do |option|
-          if short.include?(option.short)
-            raise ImplementationError, "Duplicate option defined: #{option.short}"
+          if option.respond_to?(:short)
+            if short.include?(option.short.first)
+              raise ImplementationError, "Duplicate short option defined: #{option.short.first}"
+            end
+            short.push(option.short.first) if option.short.first
+            if long.include?(option.long.first)
+              raise ImplementationError, "Duplicate long option defined: #{option.long.first}"
+            end
+            long.push(option.long.first) if option.long.first
           end
-          short.push(option.short)
-          if long.include?(option.long)
-            raise ImplementationError, "Duplicate option defined: #{option.long}"
-          end
-          long.push(option.long)
         end
       end
     end
@@ -199,7 +195,7 @@ module RokuBuilder
     # List of source options
     # @return [Array<Symbol>] List of source symbols that can be used in the options hash
     def sources
-      [:ref, :set_stage, :working, :current, :in]
+      [:ref, :stage, :working, :current, :in]
     end
 
     # List of commands requiring a source option

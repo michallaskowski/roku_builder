@@ -17,7 +17,7 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      parser.seperator("Navigator Commands:")
+      parser.separator("Navigator Commands:")
       parser.on("-N", "--nav CMD", "Send the given command to the roku") do |n|
         options[:nav] = n
       end
@@ -111,7 +111,7 @@ module RokuBuilder
         if char == "\u0003"
           running = false
         else
-          Thread.new(char) {|char| handle_navigate_input(char)}
+          Thread.new(char) {|character| handle_navigate_input(character)}
         end
       end
     end

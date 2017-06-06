@@ -45,14 +45,14 @@ module RokuBuilder
     def test_loader_build_defining_folder_and_files
       loader = Loader.new(config: @config)
       loader.build(options: @options)
-      file = File.join(@config.out[:folder], Manifest.new(config: @config).build_version+".zip")
-      Zip::File.open(file) do |file|
+      file_path = File.join(@config.out[:folder], Manifest.new(config: @config).build_version+".zip")
+      Zip::File.open(file_path) do |file|
         assert file.find_entry("manifest") != nil
         assert_nil file.find_entry("a")
         assert file.find_entry("source/b") != nil
         assert file.find_entry("source/c/d") != nil
       end
-      FileUtils.rm(file)
+      FileUtils.rm(file_path)
     end
     def test_loader_build_all_contents
       Pathname.stub(:pwd, @root_dir) do
@@ -63,14 +63,14 @@ module RokuBuilder
       end
       loader = Loader.new(config: @config)
       loader.build(options: @options)
-      file = File.join(@config.out[:folder], Manifest.new(config: @config).build_version+".zip")
-      Zip::File.open(file) do |file|
+      file_path = File.join(@config.out[:folder], Manifest.new(config: @config).build_version+".zip")
+      Zip::File.open(file_path) do |file|
         assert file.find_entry("manifest") != nil
         assert file.find_entry("a") != nil
         assert file.find_entry("source/b") != nil
         assert file.find_entry("source/c/d") != nil
       end
-      FileUtils.rm(file)
+      FileUtils.rm(file_path)
     end
 
     def test_loader_unload

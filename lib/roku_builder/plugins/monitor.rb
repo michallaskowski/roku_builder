@@ -14,7 +14,7 @@ module RokuBuilder
       parser.on("-m", "--monitor [TYPE]", "Command: run telnet to monitor roku log") do |m|
         options[:monitor] = m || "main"
       end
-      parser.on("-r", "--regexp REGEXP", "A regular expression used to filter monitor logs") do |r|
+      parser.on("-R", "--regexp REGEXP", "A regular expression used to filter monitor logs") do |r|
         options[:regexp] = r
       end
     end

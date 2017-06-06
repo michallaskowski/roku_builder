@@ -7,6 +7,9 @@ module RokuBuilder
     def setup
       RokuBuilder.class_variable_set(:@@plugins, [])
     end
+    def teardown
+      RokuBuilder.class_variable_set(:@@plugins, [])
+    end
     def test_options_initialize_no_params
       count = 0
       parse_stub = lambda{ count+= 1; {validate: true} }
@@ -69,15 +72,15 @@ module RokuBuilder
       optionsB = Minitest::Mock.new()
       list = [optionsA, optionsB]
       stack = [list]
-      2.times do
-        optionsA.expect(:short, "a")
-        optionsA.expect(:long, "aOption")
+      3.times do
+        optionsA.expect(:short, [ "a" ])
+        optionsA.expect(:long, [ "aOption" ])
         if good
-          optionsB.expect(:short, "b")
-          optionsB.expect(:long, "bOption")
+          optionsB.expect(:short, [ "b" ])
+          optionsB.expect(:long, ["bOption" ])
         else
-          optionsB.expect(:short, "a")
-          optionsB.expect(:long, "aOption")
+          optionsB.expect(:short, [ "a" ])
+          optionsB.expect(:long, [ "aOption" ])
         end
       end
       stack
@@ -107,39 +110,11 @@ module RokuBuilder
         build_options(options)
       end
     end
-    def test_options_validate_bad_current
-      skip("to be moved to package/sideload module")
-      options = {
-        package: true,
-        current: true
-      }
-      assert_raises InvalidOptions do
-        build_options(options)
-      end
-    end
-    def test_options_validate_bad_in
-      skip("to be moved to package/sideload module")
-      options = {
-        package: true,
-        in: true
-      }
-      assert_raises InvalidOptions do
-        build_options(options)
-      end
-    end
-    def test_options_validate_current
-      skip("to be moved to package/sideload module")
-      options = {
-        sideload: true,
-        current: true
-      }
-      build_options(options)
-    end
     def test_options_validate_extra_sources_package
       options = {
         validate: true,
         in: "",
-        set_stage: true
+        stage: "production"
       }
       assert_raises InvalidOptions do
         build_options(options)

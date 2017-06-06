@@ -2,29 +2,126 @@
 
 module RokuBuilder
 
-  # Method of packaging app for submission
   class Packager < Util
+    extend Plugin
+
+    def self.commands
+      {
+        package: {device: true, source: true},
+        genkey: {device: true},
+        key: {device: true, source: true}
+      }
+    end
+
+    def self.parse_options(parser:, options:)
+      parser.on("-p", "--package", "Command: Package an app") do
+        options[:package] = true
+      end
+      parser.on("-k", "--key", "Command: change device key") do
+        options[:key] = true
+      end
+      parser.on("--genkey", "Command: generate a new key") do
+        options[:genkey] = true
+      end
+    end
+
+    def self.dependencies
+      [Loader, Inspector]
+    end
+
+    def package(options:)
+      check_options(options)
+      #sideload
+      Loader.new(config: @config).sideload(options: options)
+      #rekey
+      key(options: options)
+      #package
+      sign_package(app_name_version: "", password: @config.key[:password], stage: options[:stage])
+      #inspect
+    end
+
+    def genkey(options:)
+      password, dev_id = generate_new_key()
+      @logger.unknown("Password: "+password)
+      @logger.info("DevID: "+dev_id)
+
+      out = @config.out
+      out[:file] ||= "key_"+dev_id+".pkg"
+      @config.out = out
+
+      Dir.mktmpdir { |dir|
+        config_copy = @config.dup
+        config_copy.root_dir = dir
+        Manifest.generate({config: config_copy, attributes: {}})
+        Dir.mkdir(File.join(dir, "source"))
+        File.open(File.join(dir, "source", "main.brs"), "w") do |io|
+          io.puts "sub main()"
+          io.puts "  print \"Load\""
+          io.puts "end sub"
+        end
+        loader = Loader.new(config: config_copy)
+        loader.sideload(options: options)
+        sign_package(app_name_version: "key_"+dev_id, password: password, stage: options[:stage])
+        @logger.unknown("Keyed PKG: #{File.join(@config.out[:folder], @config.out[:file])}")
+      }
+    end
+
+    # Sets the key on the roku device
+    # @param keyed_pkg [String] Path for a package signed with the desired key
+    # @param password [String] Password for the package
+    # @return [Boolean] True if key changed, false otherwise
+    def key(options:)
+      oldId = dev_id
+
+      # upload new key with password
+      payload =  {
+        mysubmit: "Rekey",
+        passwd: @config.key[:password],
+        archive: Faraday::UploadIO.new(@config.key[:keyed_pkg], 'application/octet-stream')
+      }
+      multipart_connection.post "/plugin_inspect", payload
+
+      # check key
+      newId = dev_id
+      @logger.info("Key did not change") unless newId != oldId
+      @logger.debug(oldId + " -> " + newId)
+    end
+
+    # Get the current dev id
+    # @return [String] The current dev id
+    def dev_id
+      path = "/plugin_package"
+      conn = simple_connection
+      response = conn.get path
+
+      dev_id = /Your Dev ID:\s*<font[^>]*>([^<]*)<\/font>/.match(response.body)
+      dev_id ||= /Your Dev ID:[^>]*<\/label> ([^<]*)/.match(response.body)
+      dev_id = dev_id[1] if dev_id
+      dev_id ||= "none"
+      dev_id
+    end
+
+    private
+
+    def check_options(options)
+      raise InvalidOptions, "Can not use '--in' for packaging" if options[:in]
+      raise InvalidOptions, "Can not use '--ref' for packaging" if options[:ref]
+      raise InvalidOptions, "Can not use '--current' for packaging" if options[:current]
+    end
 
     # Sign and download the currently sideloaded app
-    # @param app_name_version [String] The name and version of the package
-    # @param out_file [String] Location to download signed package to
-    # @param password [String] Password for the devices current key
-    # @return [Boolean] True on package success and download, false otherwise
-    def package(app_name_version:, out_file:, password:)
-      # Sign package
-      path = "/plugin_package"
-      conn = multipart_connection
+    def sign_package(app_name_version:, password:, stage: nil)
       payload =  {
         mysubmit: "Package",
         app_name: app_name_version,
         passwd: password,
         pkg_time: Time.now.to_i
       }
-      response = conn.post path, payload
+      response = multipart_connection.post "/plugin_package", payload
 
       # Check for error
       failed = /(Failed: [^\.]*\.)/.match(response.body)
-      return failed[1] if failed
+      raise ExecutionError, failed[1] if failed
 
       # Download signed package
       pkg = /<a href="pkgs[^>]*>([^<]*)</.match(response.body)[1]
@@ -34,10 +131,49 @@ module RokuBuilder
         f.adapter Faraday.default_adapter
       end
       response = conn.get path
-      return false if response.status != 200
+      raise ExecutionError, "Failed to download signed package" if response.status != 200
+      out_file = nil
+      if @config.out[:file]
+        out_file = File.join(@config.out[:folder], @config.out[:file])
+      elsif stage
+        out_file = File.join(@config.out[:folder], "#{@config.project[:app_name]}_#{stage}")
+      else
+        out_file = File.join(@config.out[:folder], "#{@config.project[:app_name]}_working")
+      end
       out_file = out_file+".pkg" unless out_file.end_with?(".pkg")
       File.open(out_file, 'w+') {|fp| fp.write(response.body)}
       true
+    end
+
+    # Uses the device to generate a new signing key
+    #  @return [Array<String>] Password and dev_id for the new key
+    def generate_new_key()
+      telnet_config = {
+        'Host' => @roku_ip_address,
+        'Port' => 8080
+      }
+      connection = Net::Telnet.new(telnet_config)
+      connection.puts("genkey")
+      waitfor_config = {
+        'Match' => /./,
+        'Timeout' => false
+      }
+      password = nil
+      dev_id = nil
+      while password.nil? or dev_id.nil?
+        connection.waitfor(waitfor_config) do |txt|
+          while line = txt.slice!(/^.*\n/) do
+            words = line.split
+            if words[0] == "Password:"
+              password = words[1]
+            elsif words[0] == "DevID:"
+              dev_id = words[1]
+            end
+          end
+        end
+      end
+      connection.close
+      return password, dev_id
     end
   end
 end

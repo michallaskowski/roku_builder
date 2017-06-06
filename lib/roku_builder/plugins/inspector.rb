@@ -14,7 +14,7 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      parser.on("-S", "--inspect", "Command: save a screencapture to the output file/folder") do
+      parser.on("--inspect", "Command: save a screencapture to the output file/folder") do
         options[:inspect] = true
       end
       parser.on("-S", "--screencapture", "Command: save a screencapture to the output file/folder") do

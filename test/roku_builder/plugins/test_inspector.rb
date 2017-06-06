@@ -117,7 +117,6 @@ module RokuBuilder
       io = Minitest::Mock.new()
       io.expect("write", nil, [body2])
 
-      success = false
       options = {screencapture: true }
       config, options = build_config_options_objects(InspectorTest, options, false)
       inspector = Inspector.new(config: config)

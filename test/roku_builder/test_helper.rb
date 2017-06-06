@@ -75,8 +75,8 @@ def good_config(klass=nil)
     production: {
     branch: "production",
     key: {
-    keyed_pkg: "/tmp",
-    password: "<password for pkg>"
+    keyed_pkg: File.join(root_dir, "test.pkg"),
+    password: "password"
   }
   }
   }
@@ -97,7 +97,7 @@ def good_config(klass=nil)
   },
     keys: {
     a: {
-    keyed_pkg: "/tmp",
+    keyed_pkg: File.join(root_dir, "test.pkg"),
     password: "password"
   }
   },

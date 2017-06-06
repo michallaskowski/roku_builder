@@ -5,15 +5,6 @@ module RokuBuilder
   # Commands that the controller uses to interface with the rest of the gem.
   class ControllerCommands
 
-    # Provides a hash of all of the options needed to run simple commands via
-    # the simple_command method
-    # @return [Hash] options to run simple commands
-    def self.simple_commands
-      {
-        key: { klass: Keyer, method: :rekey, config_key: :key },
-        genkey: { klass: Keyer, method: :genkey, config_key: :genkey },
-      }
-    end
     # Run Package
     # @param options [Hash] user options
     # @param config [Conifg] config object
@@ -47,18 +38,6 @@ module RokuBuilder
       Logger.instance.info "App Packaged; staged using #{stager.method}"
       SUCCESS
     end
-    def self.test(options:, config:)
-      device_config = config.parsed[:device_config].dup
-      device_config[:init_params] = config.parsed[:init_params][:tester]
-      stager = Stager.new(**config.parsed[:stage_config])
-      if stager.stage
-        tester = Tester.new(**device_config)
-        tester.run_tests(**config.parsed[:test_config])
-      end
-      stager.unstage
-      SUCCESS
-    end
-
     # Run update
     # @param config [Config] config object
     # @return [Integer] Success or Failure Code

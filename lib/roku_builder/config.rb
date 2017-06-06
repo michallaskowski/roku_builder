@@ -73,6 +73,10 @@ module RokuBuilder
       @parsed[:in] = new_in
     end
 
+    def out=(new_out)
+      @parsed[:out] = new_out
+    end
+
     def method_missing(method)
       @parsed[method]
     end
