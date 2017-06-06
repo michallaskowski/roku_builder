@@ -45,7 +45,11 @@ def test_files_path(klass)
 end
 
 def build_options(options = {validate: true}, empty_plugins = true)
-  RokuBuilder.class_variable_set(:@@plugins, []) if empty_plugins
+  if empty_plugins
+    RokuBuilder.class_variable_set(:@@plugins, [])
+    require "roku_builder/plugins/core"
+    RokuBuilder.register_plugin(RokuBuilder::Core)
+  end
   options = RokuBuilder::Options.new(options: options)
   options.validate
   options

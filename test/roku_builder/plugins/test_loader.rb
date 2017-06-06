@@ -78,7 +78,7 @@ module RokuBuilder
         to_return(status: 200, body: "Install Success", headers: {}))
 
       loader = Loader.new(config: @config)
-      loader.unload(options: @options)
+      loader.delete(options: @options)
     end
     def test_loader_unload_fail
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}/plugin_install").
@@ -86,7 +86,7 @@ module RokuBuilder
 
       loader = Loader.new(config: @config)
       assert_raises ExecutionError do
-        loader.unload(options: @options)
+        loader.delete(options: @options)
       end
     end
   end

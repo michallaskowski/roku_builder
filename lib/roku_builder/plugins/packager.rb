@@ -23,6 +23,9 @@ module RokuBuilder
       parser.on("--genkey", "Command: generate a new key") do
         options[:genkey] = true
       end
+      parser.on("-i", "--inspect", "Inspect package after packaging") do
+        options[:inspect_package] = true
+      end
     end
 
     def self.dependencies
@@ -38,6 +41,11 @@ module RokuBuilder
       #package
       sign_package(app_name_version: "", password: @config.key[:password], stage: options[:stage])
       #inspect
+      if options[:inspect_package]
+        @config.in = @config.out
+        options[:password] = @config.key[:password]
+        Inspector.new(config: @config).inspect(options: options)
+      end
     end
 
     def genkey(options:)
@@ -133,13 +141,16 @@ module RokuBuilder
       response = conn.get path
       raise ExecutionError, "Failed to download signed package" if response.status != 200
       out_file = nil
-      if @config.out[:file]
-        out_file = File.join(@config.out[:folder], @config.out[:file])
-      elsif stage
-        out_file = File.join(@config.out[:folder], "#{@config.project[:app_name]}_#{stage}")
-      else
-        out_file = File.join(@config.out[:folder], "#{@config.project[:app_name]}_working")
+      unless @config.out[:file]
+        out = @config.out
+        if stage
+          out[:file] = "#{@config.project[:app_name]}_#{stage}"
+        else
+          out[:file] = "#{@config.project[:app_name]}_working"
+        end
+        @config.out = out
       end
+      out_file = File.join(@config.out[:folder], @config.out[:file])
       out_file = out_file+".pkg" unless out_file.end_with?(".pkg")
       File.open(out_file, 'w+') {|fp| fp.write(response.body)}
       true

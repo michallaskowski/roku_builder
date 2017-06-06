@@ -55,7 +55,7 @@ module RokuBuilder
     end
 
     # Remove the currently sideloaded app
-    def unload(options:)
+    def delete(options:)
       payload =  {mysubmit: "Delete", archive: ""}
       response  = multipart_connection.post "/plugin_install", payload
       unless response.status == 200 and response.body =~ /Install Success/

@@ -103,15 +103,18 @@ module RokuBuilder
       assert_equal "e:f", options[:d]
     end
     def test_roku_builder_plugins_empty
+      RokuBuilder.class_variable_set(:@@plugins, nil)
       RokuBuilder.process_plugins
       assert_equal Array, RokuBuilder.plugins.class
       assert_equal 0, RokuBuilder.plugins.count
     end
     def test_roku_builder_plugins_empty_no_setup
+      RokuBuilder.class_variable_set(:@@plugins, nil)
       assert_equal Array, RokuBuilder.plugins.class
       assert_equal 0, RokuBuilder.plugins.count
     end
     def test_roku_builder_plugins_registered
+      RokuBuilder.class_variable_set(:@@plugins, nil)
       RokuBuilder.register_plugin(TestPlugin)
       RokuBuilder.process_plugins
       assert_equal Array, RokuBuilder.plugins.class
@@ -136,17 +139,38 @@ module RokuBuilder
         RokuBuilder.process_plugins
       end
     end
+    def test_roku_builder_plugins_missing_command_method
+       RokuBuilder.register_plugin(TestPlugin4)
+       assert_raises ImplementationError do
+         RokuBuilder.process_plugins
+       end
+    end
   end
   class TestPlugin
     extend Plugin
+    def self.commands
+      {}
+    end
   end
   class TestPlugin2
     extend Plugin
+    def self.commands
+      {}
+    end
   end
   class TestPlugin3
     extend Plugin
+    def self.commands
+      {}
+    end
     def self.dependencies
       [TestPlugin]
+    end
+  end
+  class TestPlugin4
+    extend Plugin
+    def self.commands
+      {test: {}}
     end
   end
 end

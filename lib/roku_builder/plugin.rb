@@ -8,7 +8,7 @@ module RokuBuilder
   module Plugin
 
     def commands
-      raise ImplementationError, "commands method not implemented"
+      raise ImplementationError, "commands method not implemented in #{self}"
       #[
       #  {
       #   name: :command_name,

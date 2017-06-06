@@ -54,81 +54,11 @@ module RokuBuilder
       options = {}
       options[:config] = '~/.roku_config.json'
       options[:update_manifest] = false
-      parser = build_parser(options: options)
+      parser = OptionParser.new
       add_plugin_options(parser: parser, options:options)
       validate_parser(parser: parser)
       parser.parse!
       options
-    end
-
-    def build_parser(options:)
-      OptionParser.new do |opts|
-        opts.banner = "Usage: roku <command> [options]"
-        opts.separator "Core Comamnads:"
-        opts.on("--configure", "Copy base configuration file to the --config location. Default: '~/.roku_config.json'") do
-          options[:configure] = true
-        end
-        opts.on("--validate", "Validate configuration'") do
-          options[:validate] = true
-        end
-        opts.on("--do-stage", "Run the stager. Used for scripting. Always run --do-unstage after") do
-          options[:dostage] = true
-        end
-        opts.on("--do-unstage", "Run the unstager. Used for scripting. Always run --do-script first") do
-          options[:dounstage] = true
-        end
-        opts.separator ""
-        opts.separator "Config Options:"
-        opts.on("-e", "--edit PARAMS", "Edit config params when configuring. (eg. a:b, c:d,e:f)") do |p|
-          options[:edit_params] = p
-        end
-        opts.on("--config CONFIG", "Set a custom config file. Default: '~/.roku_config.json'") do |c|
-          options[:config] = c
-        end
-        opts.separator ""
-        opts.separator "Source Options:"
-        opts.on("-r", "--ref REF", "Git referance to use for sideloading") do |r|
-          options[:ref] = r
-        end
-        opts.on("-w", "--working", "Use working directory to sideload or test") do
-          options[:working] = true
-        end
-        opts.on("-c", "--current", "Use current directory to sideload or test. Overrides any project config") do
-          options[:current] = true
-        end
-        opts.on("-s", "--stage STAGE", "Set the stage to use. Default: 'production'") do |b|
-          options[:stage] = b
-        end
-        opts.on("-P", "--project ID", "Use a different project") do |p|
-          options[:project] = p
-        end
-        opts.separator ""
-        opts.separator "Other Options:"
-        opts.on("-O", "--out PATH", "Output file/folder. If PATH ends in .pkg/.zip/.jpg, file is assumed, otherwise folder is assumed") do |o|
-          options[:out] = o
-        end
-        opts.on("-I", "--in PATH", "Input file for sideloading") do |i|
-          options[:in] = i
-        end
-        opts.on("-D", "--device ID", "Use a different device corresponding to the given ID") do |d|
-          options[:device] = d
-          options[:device_given] = true
-        end
-        opts.on("-V", "--verbose", "Print Info message") do
-          options[:verbose] = true
-        end
-        opts.on("--debug", "Print Debug messages") do
-          options[:debug] = true
-        end
-        opts.on("-h", "--help", "Show this message") do
-          puts opts
-          exit
-        end
-        opts.on("-v", "--version", "Show version") do
-          puts RokuBuilder::VERSION
-          exit
-        end
-      end
     end
 
     def add_plugin_options(parser:, options:)
@@ -183,7 +113,7 @@ module RokuBuilder
     # List of command options
     # @return [Array<Symbol>] List of command symbols that can be used in the options hash
     def commands
-      @commands ||= [:configure, :validate, :dostage, :dounstage]
+      @commands ||= []
     end
 
     # List of depricated options

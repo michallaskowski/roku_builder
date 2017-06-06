@@ -33,7 +33,7 @@ module RokuBuilder
       options_hash = {}
       options = Options.allocate
       parser.expect(:parse!, nil)
-      options.stub(:build_parser, parser) do
+      OptionParser.stub(:new, parser) do
         options.stub(:validate_parser, nil) do
           options_hash = options.send(:parse)
         end
@@ -47,7 +47,7 @@ module RokuBuilder
       parser.expect(:instance_variable_get, build_stack, [:@stack])
 
       parser.expect(:parse!, nil)
-      options.stub(:build_parser, parser) do
+      OptionParser.stub(:new, parser) do
         options.send(:parse)
       end
       parser.verify
@@ -59,7 +59,7 @@ module RokuBuilder
       options = Options.allocate
       parser.expect(:instance_variable_get, build_stack(false), [:@stack])
 
-      options.stub(:build_parser, parser) do
+      OptionParser.stub(:new, parser) do
         assert_raises(ImplementationError) do
           options.send(:parse)
         end

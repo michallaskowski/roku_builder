@@ -30,7 +30,7 @@ module RokuBuilder
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:printf, nil) do
-          profiler.run(options: options)
+          profiler.profile(options: options)
         end
       end
 

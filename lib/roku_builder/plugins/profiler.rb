@@ -18,7 +18,7 @@ module RokuBuilder
 
     # Run the profiler commands
     # @param command [Symbol] The profiler command to run
-    def run(options:)
+    def profile(options:)
       case options[:profile].to_sym
       when :stats
         print_stats

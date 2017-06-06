@@ -80,6 +80,9 @@ module RokuBuilder
       plugin.dependencies.each do |dependency|
         raise ImplementationError, "Missing dependency: #{dependency}" unless @@plugins.include?(dependency)
       end
+      plugin.commands.keys.each do |command|
+        raise ImplementationError, "Missing command method '#{command}' in #{plugin}" unless  plugin.instance_methods.include?(command)
+      end
     end
   end
 

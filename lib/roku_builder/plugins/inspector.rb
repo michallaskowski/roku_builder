@@ -20,6 +20,9 @@ module RokuBuilder
       parser.on("-S", "--screencapture", "Command: save a screencapture to the output file/folder") do
         options[:screencapture] = true
       end
+      parser.on("--password PASSWORD", "Password used for inspect") do |p|
+        options[:password] = p
+      end
     end
 
     # Inspects the given pkg

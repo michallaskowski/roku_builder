@@ -53,8 +53,9 @@ module RokuBuilder
 
     def test_packager_package
       loader = Minitest::Mock.new
+      inspector = Minitest::Mock.new
       io = Minitest::Mock.new
-      config, options = build_config_options_objects(PackagerTest, {package: true, stage: "production"}, false)
+      config, options = build_config_options_objects(PackagerTest, {package: true, stage: "production", inspect_package: true}, false)
 
       @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
         to_return(status: 200, body: "", headers: {}).times(2))
@@ -67,19 +68,24 @@ module RokuBuilder
 
       loader.expect(:sideload, nil, [Hash])
       io.expect(:write, nil, ["package_body"])
+      inspector.expect(:inspect, nil, [Hash])
 
       packager = Packager.new(config: config)
       dev_id = Proc.new {"#{Random.rand(999999999999)}"}
       Loader.stub(:new, loader) do
         Time.stub(:now, Time.at(0)) do
           File.stub(:open, nil, io) do
-            packager.stub(:dev_id, dev_id) do
-              packager.package(options: options)
+            Inspector.stub(:new, inspector) do
+              packager.stub(:dev_id, dev_id) do
+                packager.package(options: options)
+              end
             end
           end
         end
       end
       io.verify
+      loader.verify
+      inspector.verify
     end
     def test_packager_dev_id
       body = "v class=\"roku-font-5\"><label>Your Dev ID: &nbsp;</label> dev_id<hr></div>"
