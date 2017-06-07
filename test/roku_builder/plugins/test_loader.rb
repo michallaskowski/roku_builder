@@ -18,6 +18,28 @@ module RokuBuilder
       FileUtils.rm(File.join(@root_dir, "manifest"))
       @request_stubs.each {|req| remove_request_stub(req)}
     end
+    def test_loader_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Loader.parse_options(parser: parser, options: options)
+      argv = ["roku", "--sideload", "--delete", "--build", "--exclude"]
+      parser.parse! argv
+      assert options[:sideload]
+      assert options[:delete]
+      assert options[:build]
+      assert options[:exclude]
+    end
+    def test_loader_parse_options_short
+      parser = OptionParser.new
+      options = {}
+      Loader.parse_options(parser: parser, options: options)
+      argv = ["roku", "-s", "-d", "-b", "-x"]
+      parser.parse! argv
+      assert options[:sideload]
+      assert options[:delete]
+      assert options[:build]
+      assert options[:exclude]
+    end
     def test_loader_sideload
       @request_stubs.push(stub_request(:post, "http://#{@device_config[:ip]}:8060/keypress/Home").
         to_return(status: 200, body: "", headers: {}))

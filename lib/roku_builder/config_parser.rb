@@ -28,6 +28,7 @@ module RokuBuilder
       setup_stage_config
       setup_key_config
       setup_root_dir
+      setup_input_mappings
     end
 
     def process_in_argument
@@ -189,6 +190,10 @@ module RokuBuilder
       root_dir = @options[:in] if @options[:in]
       root_dir = Pathname.pwd.to_s if @options[:current]
       root_dir
+    end
+
+    def setup_input_mappings
+      @parsed[:input_mappings] = @config[:input_mappings]
     end
   end
 end

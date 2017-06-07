@@ -191,7 +191,7 @@ module RokuBuilder
 
     def test_config_manager_validate_input_mappings
       config = good_config
-      config[:input_mapping]["a"] = ["home"]
+      config[:input_mappings]["a"] = ["home"]
       validator = ConfigValidator.new(config: config)
       assert_equal [21], validator.instance_variable_get(:@codes)
     end

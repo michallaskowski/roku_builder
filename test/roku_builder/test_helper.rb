@@ -105,7 +105,7 @@ def good_config(klass=nil)
     password: "password"
   }
   },
-    input_mapping: {
+    input_mappings: {
     "a": ["home", "Home"]
   }
   }

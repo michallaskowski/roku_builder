@@ -9,6 +9,55 @@ module RokuBuilder
       RokuBuilder.setup_plugins
       register_plugins(Core)
     end
+    def test_core_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Core.parse_options(parser: parser, options: options)
+      argv = ["roku", "--configure", "--validate", "--update-manifest", "--do-stage",
+        "--do-unstage", "--edit", "params", "--config", "config-path",
+        "--ref", "ref", "--working", "--current", "--stage", "stage", "--project",
+        "project", "--out", "out", "--in", "in", "--device", "device",
+        "--verbose", "--debug"]
+      parser.parse! argv
+      assert options[:configure]
+      assert options[:validate]
+      assert options[:increment]
+      assert options[:dostage]
+      assert options[:dounstage]
+      assert_equal "params", options[:edit_params]
+      assert_equal "config-path", options[:config]
+      assert_equal "ref", options[:ref]
+      assert options[:working]
+      assert options[:current]
+      assert_equal "stage", options[:stage]
+      assert_equal "project", options[:project]
+      assert_equal "out", options[:out]
+      assert_equal "in", options[:in]
+      assert_equal "device", options[:device]
+      assert options[:device_given]
+      assert options[:verbose]
+      assert options[:debug]
+    end
+    def test_core_parse_options_short
+      parser = OptionParser.new
+      options = {}
+      Core.parse_options(parser: parser, options: options)
+      argv = ["roku", "-u", "-e", "params", "-r", "ref", "-w", "-c", "-s",
+        "stage", "-p", "project",  "-O", "out", "-I", "in", "-D", "device", "-V"]
+      parser.parse! argv
+      assert options[:increment]
+      assert_equal "params", options[:edit_params]
+      assert_equal "ref", options[:ref]
+      assert options[:working]
+      assert options[:current]
+      assert_equal "stage", options[:stage]
+      assert_equal "project", options[:project]
+      assert_equal "out", options[:out]
+      assert_equal "in", options[:in]
+      assert_equal "device", options[:device]
+      assert options[:device_given]
+      assert options[:verbose]
+    end
     def test_core_configure
       logger = Minitest::Mock.new
       options = {configure: true, config: File.join(test_files_path(CoreTest), "config.json")}

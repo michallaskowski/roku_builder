@@ -55,6 +55,7 @@ module RokuBuilder
       options[:config] = '~/.roku_config.json'
       options[:update_manifest] = false
       parser = OptionParser.new
+      parser.banner = "Usage: roku <command> [options]"
       add_plugin_options(parser: parser, options:options)
       validate_parser(parser: parser)
       parser.parse!
@@ -63,6 +64,8 @@ module RokuBuilder
 
     def add_plugin_options(parser:, options:)
       RokuBuilder.plugins.each do |plugin|
+        parser.separator ""
+        parser.separator "Options for #{plugin}:"
         plugin.parse_options(parser: parser, options: options)
       end
     end

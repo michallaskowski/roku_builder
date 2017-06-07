@@ -11,6 +11,9 @@ module RokuBuilder
       RokuBuilder.register_plugin( OptionsTestPlugin)
       options = Options.allocate
       parser.expect(:parse!, nil)
+      parser.expect(:banner=, nil, [String])
+      parser.expect(:separator, nil, [String])
+      parser.expect(:separator, nil, [String])
       OptionParser.stub(:new, parser) do
         options.stub(:validate_parser, nil) do
           options_hash = options.send(:parse)
@@ -97,7 +100,6 @@ module RokuBuilder
   class OptionsTestPlugin2
     extend Plugin
     def self.parse_options(parser:, options:)
-      options[:run] = true
     end
     def self.commands
       {test: {}}

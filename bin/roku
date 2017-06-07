@@ -7,14 +7,3 @@ $:.unshift File.join(File.dirname(__FILE__), "..", "lib")
 require "roku_builder"
 
 RokuBuilder.run()
-
-
-
-#  opts.on("-u", "--update-manifest", "Command: update the manifest file") do
-#    options[:update] = true
-#  end
-#  opts.on("-e", "--edit PARAMS", "Edit config params when configuring. (eg. a:b, c:d,e:f)") do |p|
-#    options[:edit_params] = p
-#  end
-
-

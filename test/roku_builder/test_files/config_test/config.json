@@ -25,5 +25,8 @@
         }
       }
     }
+  },
+  "input_mappings": {
+    "a": ["home", "Home"]
   }
 }

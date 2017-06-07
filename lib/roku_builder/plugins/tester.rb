@@ -13,7 +13,8 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      parser.on("-t", "--test", "Command: Test an app") do
+      parser.separator "Commands:"
+      parser.on("-t", "--test", "Test an app") do
         options[:test] = true
       end
     end

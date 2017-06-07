@@ -17,7 +17,7 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      parser.separator("Navigator Commands:")
+      parser.separator("Commands:")
       parser.on("-N", "--nav CMD", "Send the given command to the roku") do |n|
         options[:nav] = n
       end
@@ -169,13 +169,13 @@ module RokuBuilder
         #"": [ "hdmi4", "" ],
         #"": [ "avi", "" ]
       }
-      @mappings.merge!(generate_maggings) if @config.input_mapping
+      @mappings.merge!(generate_maggings) if @config.input_mappings
     end
 
     def generate_maggings
       mappings = {}
-      if @config[:input_mapping]
-        @config[:input_mapping].each_pair {|key, value|
+      if @config.input_mappings
+        @config.input_mappings.each_pair {|key, value|
           unless "".to_sym == key
             key = key.to_s.sub(/\\e/, "\e").to_sym
             mappings[key] = value

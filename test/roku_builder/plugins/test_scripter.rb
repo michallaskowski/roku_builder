@@ -12,7 +12,14 @@ module RokuBuilder
       end
       @config, @options = build_config_options_objects(ScripterTest, options, false)
     end
-
+    def test_scripter_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Scripter.parse_options(parser: parser, options: options)
+      argv = ["roku", "--print", "print"]
+      parser.parse! argv
+      assert_equal :print, options[:print]
+    end
     def test_scripter_print_bad_attr
       scripter = Scripter.new(config: @config)
       assert_raises ExecutionError do

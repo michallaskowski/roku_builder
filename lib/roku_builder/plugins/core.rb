@@ -16,8 +16,7 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      parser.banner = "Usage: roku <command> [options]"
-      parser.separator "Core Comamnads:"
+      parser.separator "Commands:"
       parser.on("--configure", "Copy base configuration file to the --config location. Default: '~/.roku_config.json'") do
         options[:configure] = true
       end

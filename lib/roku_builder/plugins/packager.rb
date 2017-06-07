@@ -14,16 +14,18 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
-      parser.on("-p", "--package", "Command: Package an app") do
+      parser.separator "Commands:"
+      parser.on("-p", "--package", "Package an app") do
         options[:package] = true
       end
-      parser.on("-k", "--key", "Command: change device key") do
+      parser.on("-k", "--key", "Change device key") do
         options[:key] = true
       end
-      parser.on("--genkey", "Command: generate a new key") do
+      parser.on("--genkey", "Generate a new key") do
         options[:genkey] = true
       end
-      parser.on("-i", "--inspect", "Inspect package after packaging") do
+      parser.separator "Options:"
+      parser.on("-i", "--inspect-package", "Inspect package after packaging") do
         options[:inspect_package] = true
       end
     end

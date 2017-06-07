@@ -7,13 +7,33 @@ module RokuBuilder
     def setup
       Logger.set_testing
       RokuBuilder.setup_plugins
-      unless RokuBuilder.plugins.include?(Navigator)
-        RokuBuilder.register_plugin(Navigator)
-      end
+      register_plugins(Navigator)
       @requests = []
     end
     def teardown
       @requests.each {|req| remove_request_stub(req)}
+    end
+    def test_navigator_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Navigator.parse_options(parser: parser, options: options)
+      argv = ["roku", "--nav", "nav", "--navigate", "--type", "text", "--screen",
+        "screen", "--screens"]
+      parser.parse! argv
+      assert_equal "nav", options[:nav]
+      assert options[:navigate]
+      assert_equal "text", options[:type]
+      assert_equal "screen", options[:screen]
+      assert options[:screens]
+    end
+    def test_navigator_parse_options_short
+      parser = OptionParser.new
+      options = {}
+      Navigator.parse_options(parser: parser, options: options)
+      argv = ["roku", "-N", "nav", "-y", "text"]
+      parser.parse! argv
+      assert_equal "nav", options[:nav]
+      assert_equal "text", options[:type]
     end
     def test_navigator_nav
       commands = {
@@ -78,12 +98,12 @@ module RokuBuilder
       config, options = build_config_options_objects(NavigatorTest, options, false)
       navigator = Navigator.new(config: config)
 
-      stub_request(:post, "http://192.168.0.100:8060/keypress/Home").
-        to_return(status: 200, body: "", headers: {})
-      stub_request(:post, "http://192.168.0.100:8060/keypress/Fwd").
-        to_return(status: 200, body: "", headers: {})
-      stub_request(:post, "http://192.168.0.100:8060/keypress/Rev").
-        to_return(status: 200, body: "", headers: {})
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Home").
+        to_return(status: 200, body: "", headers: {}))
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Fwd").
+        to_return(status: 200, body: "", headers: {}))
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Rev").
+        to_return(status: 200, body: "", headers: {}))
 
       logger.expect(:info, nil, ["Home x 5, Fwd x 3, Rev x 2,"])
       5.times do
@@ -214,33 +234,41 @@ module RokuBuilder
         @i += 1
         char
       }
-      nav = lambda { |args|
-        assert_equal :rew, args[:commands][0]
+      thread_new = lambda { |char|
+        assert_equal "<", char
       }
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Rev").
+        to_return(status: 200, body: "", headers: {}))
       options = {navigate: true}
       config, options = build_config_options_objects(NavigatorTest, options, false)
       navigator = Navigator.new(config: config)
       navigator.stub(:read_char, read_char) do
-        navigator.stub(:nav, nav) do
+        Thread.stub(:new, thread_new, "<") do
           navigator.navigate(options: options)
         end
       end
     end
     def test_navigator_hendle_interactive_text
-      stub_request(:post, "http://192.168.0.100:8060/keypress/LIT_a").
-        to_return(status: 200, body: "", headers: {})
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/LIT_b").
+        to_return(status: 200, body: "", headers: {}))
       options = {navigate: true}
       config, options = build_config_options_objects(NavigatorTest, options, false)
       navigator = Navigator.new(config: config)
-      navigator.send(:handle_navigate_input, "a")
+      navigator.send(:handle_navigate_input, "b")
     end
     def test_navigator_hendle_interactive_command
-      stub_request(:post, "http://192.168.0.100:8060/keypress/Play").
-        to_return(status: 200, body: "", headers: {})
+      @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Play").
+        to_return(status: 200, body: "", headers: {}))
       options = {navigate: true}
       config, options = build_config_options_objects(NavigatorTest, options, false)
       navigator = Navigator.new(config: config)
       navigator.send(:handle_navigate_input, "=")
+    end
+    def test_navigator_generate_mappings
+      options = {navigate: true}
+      config, options = build_config_options_objects(NavigatorTest, options, false)
+      navigator = Navigator.new(config: config)
+      assert_equal ["home", "Home"], navigator.instance_variable_get(:@mappings)[:a]
     end
   end
 end

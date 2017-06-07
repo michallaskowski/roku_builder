@@ -11,6 +11,14 @@ module RokuBuilder
         RokuBuilder.register_plugin(Profiler)
       end
     end
+    def test_profiler_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Profiler.parse_options(parser: parser, options: options)
+      argv = ["roku", "--profile", "command"]
+      parser.parse! argv
+      assert_equal "command", options[:profile]
+    end
     def test_profiler_stats
       Logger.set_testing
       options = {profile: "stats"}

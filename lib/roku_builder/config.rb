@@ -42,15 +42,6 @@ module RokuBuilder
       file.close
     end
 
-    def update
-      if @options[:build_version]
-        update_package_config
-        update_build_config
-        update_sideload_config
-        update_inspect_config
-      end
-    end
-
     def configure
       if @options[:configure]
         source_config = File.expand_path(File.join(File.dirname(__FILE__), "..", '..', 'config.json.example'))
@@ -194,36 +185,6 @@ module RokuBuilder
           @config[:projects][state[:project]][:stages][state[:stage]][key] = value
         end
       }
-    end
-
-    def update_package_config
-      if @parsed[:package_config]
-        @parsed[:package_config][:app_name_version] = "#{@parsed[:project_config][:app_name]} - #{@parsed[:stage]} - #{@options[:build_version]}"
-        @parsed[:package_config][:out_file] = out_file_path
-      end
-    end
-
-    def update_build_config
-      @parsed[:build_config][:out_file] = out_file_path if @parsed[:build_config]
-    end
-
-    def update_sideload_config
-      if @parsed[:sideload_config] and @options[:out]
-        @parsed[:sideload_config][:out_file] = out_file_path
-      end
-    end
-
-    def update_inspect_config
-      if @parsed[:inspect_config] and @parsed[:package_config]
-        @parsed[:inspect_config][:pkg] = @parsed[:package_config][:out_file]
-      end
-    end
-
-    def out_file_path
-      unless @parsed[:out][:file]
-        @parsed[:out][:file] = "#{@parsed[:project_config][:app_name]}_#{@parsed[:stage]}_#{@options[:build_version]}"
-      end
-      File.join(@parsed[:out][:folder], @parsed[:out][:file])
     end
   end
 end

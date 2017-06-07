@@ -11,9 +11,11 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
+      parser.separator "Commands:"
       parser.on("-m", "--monitor [TYPE]", "Command: run telnet to monitor roku log") do |m|
         options[:monitor] = m || "main"
       end
+      parser.separator "Options:"
       parser.on("-R", "--regexp REGEXP", "A regular expression used to filter monitor logs") do |r|
         options[:regexp] = r
       end

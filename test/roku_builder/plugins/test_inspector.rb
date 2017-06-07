@@ -12,6 +12,24 @@ module RokuBuilder
     def teardown
       @requests.each {|req| remove_request_stub(req)}
     end
+    def test_inspector_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Inspector.parse_options(parser: parser, options: options)
+      argv = ["roku", "--inspect", "--screencapture", "--password", "password"]
+      parser.parse! argv
+      assert options[:inspect]
+      assert options[:screencapture]
+      assert_equal "password", options[:password]
+    end
+    def test_scripter_parse_options_short
+      parser = OptionParser.new
+      options = {}
+      Inspector.parse_options(parser: parser, options: options)
+      argv = ["roku", "-S"]
+      parser.parse! argv
+      assert options[:screencapture]
+    end
     def test_inspector_inspect
       logger = Minitest::Mock.new()
 

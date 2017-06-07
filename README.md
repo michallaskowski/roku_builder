@@ -61,7 +61,7 @@ The following are default configuration options:
  * devices: information for accessing devices
  * projects: this is a hash of project objects
  * keys: contains keys that will be used for signing packages
- * input_mapping: allows you to change key mappings for the intractive navigator
+ * input_mappings: allows you to change key mappings for the intractive navigator
 
 ##### Device Configuration
 
@@ -332,8 +332,8 @@ remote inputs. This can be done by running the following command:
     $ roku --navigate
 
 Running in verbose mode will print out all of the key mappings avaiable. If you
-want to change these mappings you can do so via the input_mapping config values
-. To determine the codes needed to enter in the input_mapping config you can
+want to change these mappings you can do so via the input_mappings config values
+. To determine the codes needed to enter in the input_mappings config you can
 run the navigator in debug mode.
 
 #### Profiling Scene Graph

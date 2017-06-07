@@ -24,6 +24,24 @@ module RokuBuilder
     def teardown
       @connection.verify
     end
+    def test_scripter_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Monitor.parse_options(parser: parser, options: options)
+      argv = ["roku", "--monitor", "--regexp", "regexp"]
+      parser.parse! argv
+      assert options[:monitor]
+      assert_equal "regexp", options[:regexp]
+    end
+    def test_scripter_parse_options_short
+      parser = OptionParser.new
+      options = {}
+      Monitor.parse_options(parser: parser, options: options)
+      argv = ["roku", "-m", "-r", "regexp"]
+      parser.parse! argv
+      assert options[:monitor]
+      assert_equal "regexp", options[:regexp]
+    end
     def test_monitor_monit
       @connection.expect(:waitfor, nil) do |config|
         assert_equal(/./, config['Match'])

@@ -32,6 +32,7 @@ module RokuBuilder
       parser = Minitest::Mock.new()
       options_hash = {}
       options = Options.allocate
+      parser.expect(:banner=, nil, [String])
       parser.expect(:parse!, nil)
       OptionParser.stub(:new, parser) do
         options.stub(:validate_parser, nil) do
@@ -45,7 +46,7 @@ module RokuBuilder
       parser = Minitest::Mock.new()
       options = Options.allocate
       parser.expect(:instance_variable_get, build_stack, [:@stack])
-
+      parser.expect(:banner=, nil, [String])
       parser.expect(:parse!, nil)
       OptionParser.stub(:new, parser) do
         options.send(:parse)
@@ -57,6 +58,7 @@ module RokuBuilder
       Array.class_eval { alias_method :each_option, :each  }
       parser = Minitest::Mock.new()
       options = Options.allocate
+      parser.expect(:banner=, nil, [String])
       parser.expect(:instance_variable_get, build_stack(false), [:@stack])
 
       OptionParser.stub(:new, parser) do

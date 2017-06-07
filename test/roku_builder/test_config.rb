@@ -172,5 +172,13 @@ module RokuBuilder
         config.param = "value"
       end
     end
+    def test_config_input_mappings
+      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), validate: true})
+      config = Config.new(options: options)
+      config.load
+      config.parse
+      refute_nil config.input_mappings
+      assert_equal ["home", "Home"], config.input_mappings[:a]
+    end
   end
 end

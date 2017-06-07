@@ -13,6 +13,27 @@ module RokuBuilder
     def teardown
       @requests.each {|req| remove_request_stub(req)}
     end
+    def test_packager_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Packager.parse_options(parser: parser, options: options)
+      argv = ["roku", "--package", "--key", "--genkey", "--inspect-package"]
+      parser.parse! argv
+      assert options[:package]
+      assert options[:key]
+      assert options[:genkey]
+      assert options[:inspect_package]
+    end
+    def test_scripter_parse_options_short
+      parser = OptionParser.new
+      options = {}
+      Packager.parse_options(parser: parser, options: options)
+      argv = ["roku", "-p", "-k", "-i"]
+      parser.parse! argv
+      assert options[:package]
+      assert options[:key]
+      assert options[:inspect_package]
+    end
     def test_packager_current
       config, options = [nil, nil]
       Pathname.stub(:pwd, test_files_path(PackagerTest)) do

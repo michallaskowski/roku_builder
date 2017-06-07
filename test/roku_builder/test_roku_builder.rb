@@ -5,6 +5,7 @@ require_relative "test_helper.rb"
 module RokuBuilder
   class RokuBuilderTest < Minitest::Test
     def setup
+      Logger.set_testing
       RokuBuilder.class_variable_set(:@@plugins, [])
       @ping = Minitest::Mock.new
       @options = build_options({validate: true, device_given: false, working: true})
@@ -145,6 +146,18 @@ module RokuBuilder
          RokuBuilder.process_plugins
        end
     end
+    def test_roku_builder_load_config
+      config = Minitest::Mock.new
+      config.expect(:configure, nil)
+      config.expect(:load, nil)
+      config.expect(:validate, nil)
+      config.expect(:parse, nil)
+      Config.stub(:new, config) do
+        returned = RokuBuilder.load_config(options: {})
+        assert config === returned
+      end
+      config.verify
+    end
   end
   class TestPlugin
     extend Plugin
@@ -154,9 +167,6 @@ module RokuBuilder
   end
   class TestPlugin2
     extend Plugin
-    def self.commands
-      {}
-    end
   end
   class TestPlugin3
     extend Plugin

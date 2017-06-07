@@ -13,6 +13,26 @@ module RokuBuilder
     def teardown
       @requests.each {|req| remove_request_stub(req)}
     end
+    def test_linker_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Linker.parse_options(parser: parser, options: options)
+      argv = ["roku", "--deeplink", "options", "--app-list", "--app", "app"]
+      parser.parse! argv
+      assert_equal "options", options[:deeplink]
+      assert options[:applist]
+      assert_equal "app", options[:app_id]
+    end
+    def test_linker_parse_options_short
+      parser = OptionParser.new
+      options = {}
+      Linker.parse_options(parser: parser, options: options)
+      argv = ["roku", "-o", "options", "-A", "-a", "app"]
+      parser.parse! argv
+      assert_equal "options", options[:deeplink]
+      assert options[:applist]
+      assert_equal "app", options[:app_id]
+    end
     def test_linker_link
       @requests.push(stub_request(:post, "http://192.168.0.100:8060/launch/dev?a=A&b=B:C&d=a%5Cb").
         to_return(status: 200, body: "", headers: {}))

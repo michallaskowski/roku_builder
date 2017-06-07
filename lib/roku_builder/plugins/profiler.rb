@@ -11,6 +11,7 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:, options:)
+      parser.separator "Commands:"
       parser.on("--profile COMMAND", "Run various profiler options") do |c|
         options[:profile] = c
       end

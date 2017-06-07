@@ -21,6 +21,14 @@ module RokuBuilder
       @connection.verify
       @requests.each {|req| remove_request_stub(req)}
     end
+    def test_scripter_parse_options_long
+      parser = OptionParser.new
+      options = {}
+      Tester.parse_options(parser: parser, options: options)
+      argv = ["roku", "--test"]
+      parser.parse! argv
+      assert options[:test]
+    end
     def test_tester_runtests
       config, options = build_config_options_objects(TesterTest, {test: true, working: true}, false)
       tester = Tester.new(config: config)

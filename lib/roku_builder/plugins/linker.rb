@@ -14,12 +14,14 @@ module RokuBuilder
     end
 
     def self.parse_options(parser:,  options:)
-      parser.on("-o", "--deeplink OPTIONS", "Command: Deeplink into app. Define options as keypairs. (eg. a:b, c:d,e:f)") do |o|
+      parser.separator "Commands:"
+      parser.on("-o", "--deeplink OPTIONS", "Deeplink into app. Define options as keypairs. (eg. a:b, c:d,e:f)") do |o|
         options[:deeplink] = o
       end
-      parser.on("-A", "--app-list", "Command: List currently installed apps") do
+      parser.on("-A", "--app-list", "List currently installed apps") do
         options[:applist] = true
       end
+      parser.separator "Options:"
       parser.on("-a", "--app ID", "Send App id for deeplinking") do |a|
         options[:app_id] = a
       end
