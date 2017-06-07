@@ -70,6 +70,7 @@ module RokuBuilder
           io.puts "end sub"
         end
         loader = Loader.new(config: config_copy)
+        options[:current] = true
         loader.sideload(options: options)
         sign_package(app_name_version: "key_"+dev_id, password: password, stage: options[:stage])
         @logger.unknown("Keyed PKG: #{File.join(@config.out[:folder], @config.out[:file])}")
@@ -189,4 +190,5 @@ module RokuBuilder
       return password, dev_id
     end
   end
+  RokuBuilder.register_plugin(Packager)
 end

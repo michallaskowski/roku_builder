@@ -83,4 +83,5 @@ module RokuBuilder
       params.collect{|k,v| "#{k}=#{CGI.escape(v)}"}.join('&')
     end
   end
+  RokuBuilder.register_plugin(Linker)
 end

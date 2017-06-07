@@ -10,8 +10,8 @@ module RokuBuilder
         configure: {},
         validate: {},
         increment: {source: true},
-        dostage: {},
-        dounstage: {}
+        dostage: {source: true},
+        dounstage: {source: true}
       }
     end
 
@@ -107,10 +107,11 @@ module RokuBuilder
       Logger.instance.info "Update build version from:\n#{old}\nto:\n#{new}"
     end
     def dostage(options:)
-      Stager.new(config: @config).stage
+      Stager.new(config: @config, options: options).stage
     end
     def dounstage(options:)
-      Stager.new(config: @config).unstage
+      Stager.new(config: @config, options: options).unstage
     end
   end
+  RokuBuilder.register_plugin(Core)
 end

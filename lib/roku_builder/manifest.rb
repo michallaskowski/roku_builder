@@ -74,7 +74,7 @@ module RokuBuilder
     end
 
     def process_manifest(process_folder, process_zip)
-      root_dir = @config.parsed[:root_dir]
+      root_dir = @config.root_dir
       if File.directory?(root_dir)
         path = File.join(root_dir, "manifest")
         process_folder.call(path)

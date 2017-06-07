@@ -36,17 +36,24 @@ module RokuBuilder
   # Run the builder
   # @param options [Hash] The options hash
   def self.run
-
     setup_plugins
-
     options = Options.new
-
+    options.validate
     initialize_logger(options: options)
+    if options[:debug]
+      execute(options: options)
+    else
+      begin
+        execute(options: options)
+      rescue StandardError => e
+        Logger.instance.fatal "#{e.class}: #{e.message}"
+      end
+    end
+  end
 
+  def self.execute(options:)
     config = load_config(options: options)
-
     check_devices(options: options, config: config)
-
     execute_command(options: options, config: config)
   end
 
@@ -73,6 +80,7 @@ module RokuBuilder
 
   def self.process_plugins
     @@plugins ||= []
+    @@plugins.sort! {|a,b| a.to_s <=> b.to_s}
     unless @@plugins.count == @@plugins.uniq.count
       raise ImplementationError, "Duplicate plugins"
     end
@@ -99,9 +107,11 @@ module RokuBuilder
   def self.load_config(options:)
     config = Config.new(options: options)
     config.configure
-    config.load
-    config.validate
-    config.parse
+    unless options[:configure] and not options[:edit_params]
+      config.load
+      config.validate
+      config.parse
+    end
     config
   end
 
@@ -126,6 +136,12 @@ module RokuBuilder
   end
 
   def self.execute_command(options:, config:)
+    @@plugins.each do |plugin|
+      if plugin.commands.keys.include?(options.command)
+        instance = plugin.new(config: config)
+        instance.send(options.command, {options: options})
+      end
+    end
   end
 
   # Parses a string into and options hash

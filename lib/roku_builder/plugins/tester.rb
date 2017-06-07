@@ -103,4 +103,5 @@ module RokuBuilder
       end
     end
   end
+  RokuBuilder.register_plugin(Tester)
 end
