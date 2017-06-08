@@ -9,7 +9,7 @@ module RokuBuilder
       {
         configure: {},
         validate: {},
-        increment: {source: true},
+        increment: {source: true, stage: true},
         dostage: {source: true},
         dounstage: {source: true}
       }

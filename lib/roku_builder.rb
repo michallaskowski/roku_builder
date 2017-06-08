@@ -138,8 +138,14 @@ module RokuBuilder
   def self.execute_command(options:, config:)
     @@plugins.each do |plugin|
       if plugin.commands.keys.include?(options.command)
+        stager = nil
+        if plugin.commands[options.command][:stage]
+          stager = Stager.new(config: config, options: options)
+          stager.stage
+        end
         instance = plugin.new(config: config)
         instance.send(options.command, {options: options})
+        stager.unstage if stager
       end
     end
   end

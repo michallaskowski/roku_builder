@@ -8,7 +8,7 @@ module RokuBuilder
 
     def self.commands
       {
-        deeplink: {device: true},
+        deeplink: {device: true, stage: true},
         applist: {device: true}
       }
     end
