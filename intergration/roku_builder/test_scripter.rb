@@ -12,6 +12,7 @@ module RokuBuilder
     end
     def teardown
       FileUtils.rm(@config) if File.exist?(@config)
+      cleanup_uuid_script
     end
     def test_print_root_dir
       output = `#{roku} --print root_dir --working`

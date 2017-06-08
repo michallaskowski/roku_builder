@@ -91,6 +91,11 @@ module Helpers
     end
   end
 
+  def cleanup_uuid_script
+    path = File.join(testfiles_path(self.class), "components", "uuid.brs")
+    FileUtils.rm (path) if File.exist?(path)
+  end
+
   def good_config(klass)
     root_dir = testfiles_path(klass)
     {

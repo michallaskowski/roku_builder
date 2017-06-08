@@ -12,6 +12,7 @@ module RokuBuilder
     end
     def teardown
       FileUtils.rm(@config) if File.exist?(@config)
+      cleanup_uuid_script
     end
     def test_inspector
       target = File.join(testfiles_path(InspectorIntergrationTest), "test.pkg")

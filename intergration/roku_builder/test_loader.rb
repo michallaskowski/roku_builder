@@ -12,6 +12,7 @@ module RokuBuilder
     end
     def teardown
       FileUtils.rm(@config) if File.exist?(@config)
+      cleanup_uuid_script
     end
     def test_sideload
       output = `#{roku} --sideload --stage production`

@@ -143,70 +143,23 @@ module RokuBuilder
       end
     end
     def test_screencapture_png
-      connection = Minitest::Mock.new
-      faraday = Minitest::Mock.new
-      response = Minitest::Mock.new
-      io = Minitest::Mock.new
-
-      device_config = {
-        ip: "111.222.333",
-        user: "user",
-        password: "password"
-      }
-      screencapture_config = {
-        out_folder: "out/folder/path",
-        out_file: nil
-      }
-      path = "/plugin_inspect"
-      password = "password"
-      payload ={
-        mysubmit: "Screenshot",
-        password: password,
-        archive: io
-      }
       body = "<hr /><img src=\"pkgs/dev.png?time=1455629573\">"
-      connection.expect(:post, response) do |arg1, arg2|
-        assert_equal path, arg1
-        assert_equal payload[:mysubmit], arg2[:mysubmit]
-        assert_equal payload[:password], arg2[:passwd]
-        assert payload[:archive] === arg2[:archive]
-      end
-      faraday.expect(:headers, {})
-      faraday.expect(:request, nil, [:digest, device_config[:user], device_config[:password]])
-      faraday.expect(:request, nil, [:multipart])
-      faraday.expect(:request, nil, [:url_encoded])
-      faraday.expect(:adapter, nil, [Faraday.default_adapter])
-      response.expect(:body, body)
-      response.expect(:body, body)
-      response.expect(:body, body)
+      @requests.push(stub_request(:post, "http://192.168.0.100/plugin_inspect").
+        to_return(status: 200, body: body, headers: {}))
 
-
-      path2 = "pkgs/dev.png?time=1455629573"
       body2 = "<screencapture>"
-      connection.expect(:get, response, [path2])
-      faraday.expect(:request, nil, [:digest, device_config[:user], device_config[:password]])
-      faraday.expect(:adapter, nil, [Faraday.default_adapter])
-      response.expect(:body, body2)
-      response.expect(:success?, true)
+      @requests.push(stub_request(:get, "http://192.168.0.100/pkgs/dev.png?time=1455629573").
+        to_return(status: 200, body: body2, headers: {}))
+
+      io = Minitest::Mock.new()
       io.expect("write", nil, [body2])
 
-
-      success = false
-      inspector = Inspector.new(**device_config)
-      Faraday.stub(:new, connection, faraday) do
-        Faraday::UploadIO.stub(:new, io) do
-          File.stub(:open, nil, io) do
-            success = inspector.screencapture(**screencapture_config)
-          end
-        end
+      options = {screencapture: true }
+      config, options = build_config_options_objects(InspectorTest, options, false)
+      inspector = Inspector.new(config: config)
+      File.stub(:open, nil, io) do
+        inspector.screencapture(options: options)
       end
-
-      assert success
-
-      connection.verify
-      faraday.verify
-      io.verify
-      response.verify
     end
   end
 end
