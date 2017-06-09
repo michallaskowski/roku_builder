@@ -37,7 +37,7 @@ module RokuBuilder
       logger.expect(:unknown, nil){|text| /=*/ =~ text}
       logger.expect(:unknown, nil){|text| /app_name/ =~ text}
       logger.expect(:unknown, nil){|text| /dev_id/ =~ text}
-      logger.expect(:unknown, nil){|text| /#{Time.at(628232400).to_s}/ =~ text}
+      logger.expect(:unknown, nil, [String])
       logger.expect(:unknown, nil){|text| /dev_zip/ =~ text}
       logger.expect(:unknown, nil){|text| /=*/ =~ text}
 
@@ -87,7 +87,7 @@ module RokuBuilder
       logger.expect(:unknown, nil){|text| /=*/ =~ text}
       logger.expect(:unknown, nil){|text| /app_name/ =~ text}
       logger.expect(:unknown, nil){|text| /dev_id/ =~ text}
-      logger.expect(:unknown, nil){|text| /#{Time.at(628232400).to_s}/ =~ text}
+      logger.expect(:unknown, nil, [String])
       logger.expect(:unknown, nil){|text| /dev_zip/ =~ text}
       logger.expect(:unknown, nil){|text| /=*/ =~ text}
       body = " <table cellpadding=\"2\">"+
