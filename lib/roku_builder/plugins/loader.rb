@@ -9,7 +9,7 @@ module RokuBuilder
     def self.commands
       {
         sideload: {source: true, device: true, stage: true},
-        build: {source: true, stage: true},
+        build: {source: true, stage: true, exclude: true},
         delete: {device: true}
       }
     end

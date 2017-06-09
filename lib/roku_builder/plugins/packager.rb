@@ -7,7 +7,7 @@ module RokuBuilder
 
     def self.commands
       {
-        package: {device: true, source: true, stage: true},
+        package: {device: true, source: true, stage: true, exclude: true},
         genkey: {device: true},
         key: {device: true, source: true}
       }
