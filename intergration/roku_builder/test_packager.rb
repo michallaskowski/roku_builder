@@ -21,6 +21,7 @@ module RokuBuilder
       refute(/WARN: Missing File/.match(output))
       wait_assert {File.exist?(target)}
       FileUtils.rm(target) if File.exist?(target)
+      FileUtils.rm(target+".zip") if File.exist?(target+".zip")
     end
     def test_key
       target = File.join(testfiles_path(PackagerIntergrationTest), "pkg.pkg")
