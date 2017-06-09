@@ -26,7 +26,9 @@ To sideload example or tutoral, switch to correct directory and run:
 To sideload project, ensure [config](https://github.com/ViacomInc/roku_builder/wiki/Configuration#project-configuration) is setup and run:
 
     $ roku -lw
+
 or
+
     $ roku -ls <stage>
 
 ### Debugging
