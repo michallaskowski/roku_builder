@@ -32,7 +32,7 @@ module RokuBuilder
 
     # Monitor a development log on the Roku device
     def monitor(options:)
-      type = options[:monitor]
+      type = options[:monitor].to_sym
       telnet_config = { 'Host' => @roku_ip_address, 'Port' => @ports[type] }
       waitfor_config = { 'Match' => /./, 'Timeout' => false }
 

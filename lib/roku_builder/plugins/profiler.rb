@@ -23,6 +23,12 @@ module RokuBuilder
       case options[:profile].to_sym
       when :stats
         print_stats
+      when :all
+        print_all_nodes
+      when :images
+        print_image_information
+      when :textures
+        print_texture_information
       end
     end
 
@@ -30,7 +36,9 @@ module RokuBuilder
 
     # Print the node stats
     def print_stats
-      lines = get_all_nodes
+      end_reg = /<\/All_Nodes>/
+      start_reg = /<All_Nodes>/
+      lines = get_command_response(command: "sgnodes all", start_reg: start_reg, end_reg: end_reg)
       xml_string = lines.join("\n")
       stats = {"Total" => 0}
       doc = Nokogiri::XML(xml_string)
@@ -52,9 +60,28 @@ module RokuBuilder
       end
     end
 
+    def print_all_nodes
+      start_reg = /<All_Nodes>/
+      end_reg = /<\/All_Nodes>/
+      lines = get_command_response(command: "sgnodes all", start_reg: start_reg, end_reg: end_reg)
+      lines.each {|line| print line}
+    end
+    def print_image_information
+      start_reg = /RoGraphics instance/
+      end_reg = /Available memory/
+      lines = get_command_response(command: "r2d2_bitmaps", start_reg: start_reg, end_reg: end_reg)
+      lines.each {|line| print line}
+    end
+    def print_texture_information
+      start_reg = /\*+/
+      end_reg = /#{SecureRandom.uuid}/
+      lines = get_command_response(command: "loaded_textures", start_reg: start_reg, end_reg: end_reg)
+      lines.each {|line| print line}
+    end
+
     # Retrive list of all nodes
     # @return [Array<String>] Array of lines
-    def get_all_nodes
+    def get_command_response(command:, start_reg:, end_reg:, unique: false)
       waitfor_config = {
         'Match' => /.+/,
         'Timeout' => 5
@@ -66,22 +93,22 @@ module RokuBuilder
 
       connection = Net::Telnet.new(telnet_config)
 
-      lines = []
-      all_txt = ""
-      in_nodes = false
-      done = false
-      connection.puts("sgnodes all\n")
-      while not done
+      @lines = []
+      @all_txt = ""
+      @begun = false
+      @done = false
+      connection.puts("#{command}\n")
+      while not @done
         begin
           connection.waitfor(waitfor_config) do |txt|
-            in_nodes, done, all_txt = handle_text(all_txt: all_txt, txt: txt, in_nodes: in_nodes, lines: lines)
+            handle_text(txt: txt, start_reg: start_reg, end_reg: end_reg, unique: unique)
           end
         rescue Net::ReadTimeout
           @logger.warn "Timed out reading profiler information"
-          done = true
+          @done = true
         end
       end
-      lines
+      @lines
     end
 
     # Handle profiling text
@@ -89,20 +116,19 @@ module RokuBuilder
     # @param txt [String] current text from telnet
     # @param in_nodes [Boolean] currently parsing test text
     # @return [Boolean] currently parsing test text
-    def handle_text(all_txt:, txt:, in_nodes:, lines:)
-      all_txt += txt
-      end_reg = /<\/All_Nodes>/
-      start_reg = /<All_Nodes>/
-      done = false
-      while line = all_txt.slice!(/^.*\n/) do
-        in_nodes = true if line =~ start_reg
-        lines.push(line) if in_nodes
+    def handle_text(txt:, start_reg:, end_reg:, unique:)
+      @all_txt += txt
+      while line = @all_txt.slice!(/^.*\n/) do
+        if line =~ start_reg
+          @begun = true
+          @lines = [] if unique
+        end
+        @lines.push(line) if @begun
         if line =~ end_reg
-          in_nodes = false
-          done = true
+          @begun = false
+          @done = true
         end
       end
-      [in_nodes, done, all_txt]
     end
   end
   RokuBuilder.register_plugin(Profiler)
