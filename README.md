@@ -64,7 +64,6 @@ directory:
  * Add configuration option for build_version format
  * Check if keying with bad password
  * Check if missing key config when required
- * Extend profiling
 
 ## Contributing
 

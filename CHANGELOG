@@ -1,3 +1,15 @@
+ = 4.0.0 =
+
+ - Code base refactor for maintianability
+ - Add plugin architecture
+ - Add more profiler commands
+ - Replaced --deeplink-options command with just --deeplink
+ - Added Webmock to simplify tests
+ - Add basic intergration tests
+ - Move majority of documentation to Wiki
+ - Update to run on ruby-2.4.1
+ - Update dependancies
+
  = 3.13.0 =
 
  - Windows combatability
