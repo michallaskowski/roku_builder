@@ -4,6 +4,9 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class ConfigValidatorTest < Minitest::Test
+    def setup
+      Logger.set_testing
+    end
 
     def test_config_manager_validate_devices
       config = good_config

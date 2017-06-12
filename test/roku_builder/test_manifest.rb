@@ -9,6 +9,7 @@ module RokuBuilder
       @config = Config.new(options: options)
       @config.instance_variable_set(:@parsed, {root_dir: @root_dir})
       FileUtils.cp(File.join(@root_dir, "manifest_template"), File.join(@root_dir, "manifest"))
+      Logger.set_testing
     end
     def teardown
       path = File.join(@config.parsed[:root_dir], "manifest")

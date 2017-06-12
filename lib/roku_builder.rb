@@ -35,26 +35,38 @@ end
 module RokuBuilder
   # Run the builder
   # @param options [Hash] The options hash
-  def self.run
+  def self.run(options: nil)
+    @@options = nil
     setup_plugins
-    options = Options.new
-    options.validate
-    initialize_logger(options: options)
-    if options[:debug]
-      execute(options: options)
+    setup_options(options: options)
+    return unless @@options
+    initialize_logger
+    if @@options[:debug]
+      execute
     else
       begin
-        execute(options: options)
+        execute
       rescue StandardError => e
         Logger.instance.fatal "#{e.class}: #{e.message}"
       end
     end
   end
 
-  def self.execute(options:)
-    config = load_config(options: options)
-    check_devices(options: options, config: config)
-    execute_command(options: options, config: config)
+  def self.setup_options(options:)
+    begin
+      @@options = Options.new(options: options)
+      @@options.validate
+    rescue InvalidOptions => e
+      Logger.instance.fatal "#{e.class}: #{e.message}"
+      @@options = nil
+      return
+    end
+  end
+
+  def self.execute
+    load_config
+    check_devices
+    execute_command
   end
 
   def self.plugins
@@ -82,7 +94,8 @@ module RokuBuilder
     @@plugins ||= []
     @@plugins.sort! {|a,b| a.to_s <=> b.to_s}
     unless @@plugins.count == @@plugins.uniq.count
-      raise ImplementationError, "Duplicate plugins"
+      duplicates = @@plugins.select{ |e| @@plugins.count(e) > 1  }.uniq
+      raise ImplementationError, "Duplicate plugins: #{duplicates.join(", ")}"
     end
     @@plugins.each do |plugin|
       plugin.dependencies.each do |dependency|
@@ -94,38 +107,37 @@ module RokuBuilder
     end
   end
 
-  def self.initialize_logger(options:)
-    if options[:debug]
+  def self.initialize_logger
+    if @@options[:debug]
       Logger.set_debug
-    elsif options[:verbose]
+    elsif @@options[:verbose]
       Logger.set_info
     else
       Logger.set_warn
     end
   end
 
-  def self.load_config(options:)
-    config = Config.new(options: options)
-    config.configure
-    unless options[:configure] and not options[:edit_params]
-      config.load
-      config.validate
-      config.parse
+  def self.load_config
+    @@config = Config.new(options: @@options)
+    @@config.configure
+    unless @@options[:configure] and not @@options[:edit_params]
+      @@config.load
+      @@config.validate
+      @@config.parse
     end
-    config
   end
 
-  def self.check_devices(options:, config:)
-    if options.device_command?
+  def self.check_devices
+    if @@options.device_command?
       ping = Net::Ping::External.new
-      host = config.parsed[:device_config][:ip]
+      host = @@config.parsed[:device_config][:ip]
       return if ping.ping? host, 1, 0.2, 1
-      raise DeviceError, "Device not online" if options[:device_given]
-      config.raw[:devices].each_pair {|key, value|
+      raise DeviceError, "Device not online" if @@options[:device_given]
+      @@config.raw[:devices].each_pair {|key, value|
         unless key == :default
           host = value[:ip]
           if ping.ping? host, 1, 0.2, 1
-            config.parsed[:device_config] = value
+            @@config.parsed[:device_config] = value
             Logger.instance.warn("Default device offline, choosing Alternate")
             return
           end
@@ -135,16 +147,16 @@ module RokuBuilder
     end
   end
 
-  def self.execute_command(options:, config:)
+  def self.execute_command
     @@plugins.each do |plugin|
-      if plugin.commands.keys.include?(options.command)
+      if plugin.commands.keys.include?(@@options.command)
         stager = nil
-        if plugin.commands[options.command][:stage]
-          stager = Stager.new(config: config, options: options)
+        if plugin.commands[@@options.command][:stage]
+          stager = Stager.new(config: @@config, options: @@options)
           stager.stage
         end
-        instance = plugin.new(config: config)
-        instance.send(options.command, {options: options})
+        instance = plugin.new(config: @@config)
+        instance.send(@@options.command, {options: @@options})
         stager.unstage if stager
       end
     end

@@ -4,6 +4,9 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class PluginTest < Minitest::Test
+    def setup
+      Logger.set_testing
+    end
     def test_module_commands_fail
       assert_raises ImplementationError do
         TestClass.commands

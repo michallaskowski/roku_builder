@@ -4,6 +4,9 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class ConfigParserTest < Minitest::Test
+    def setup
+      Logger.set_testing
+    end
     def test_manifest_config
       options = build_options({
         validate: true,

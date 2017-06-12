@@ -6,6 +6,7 @@ module RokuBuilder
   class OptionsTest < Minitest::Test
     def setup
       RokuBuilder.class_variable_set(:@@plugins, [])
+      Logger.set_testing
     end
     def teardown
       RokuBuilder.class_variable_set(:@@plugins, [])

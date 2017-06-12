@@ -4,6 +4,9 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class StagerTest < Minitest::Test
+    def setup
+      Logger.set_testing
+    end
 
     def build_config_options(options)
       @options = build_options(options)

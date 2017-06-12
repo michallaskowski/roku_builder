@@ -4,6 +4,9 @@ require_relative "test_helper.rb"
 
 module RokuBuilder
   class OptionsPluginTest < Minitest::Test
+    def setup
+      Logger.set_testing
+    end
     def test_options_plugins_parse
       RokuBuilder.class_variable_set(:@@plugins, nil)
       parser = Minitest::Mock.new()
