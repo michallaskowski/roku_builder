@@ -14,7 +14,7 @@ module RokuBuilder
       FileUtils.rm(@config) if File.exist?(@config)
       cleanup_uuid_script
     end
-    def test_profile
+    def test_profile_stats
       `#{roku} --sideload --working`
       assert_log @uuid
       output = `#{roku} --profile stats`
@@ -25,6 +25,24 @@ module RokuBuilder
       assert output =~ /Poster \|\s*1/
       assert output =~ /Node \|\s*1/
       assert output =~ /Rectangle \|\s*1/
+    end
+    def test_profile_all
+      `#{roku} --sideload --working`
+      assert_log @uuid
+      output = `#{roku} --profile all`
+      assert output =~ /RectangleExample/
+    end
+    def test_profile_images
+      `#{roku} --sideload --working`
+      assert_log @uuid
+      output = `#{roku} --profile images`
+      assert output =~ /Available memory/
+    end
+    def test_profile_textures
+      `#{roku} --sideload --working`
+      assert_log @uuid
+      output = `#{roku} --profile textures`
+      assert output =~ /System textures/
     end
   end
 end

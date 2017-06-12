@@ -48,6 +48,7 @@ module Minitest
         msg ||= "Expected to see log with #{log}"
         raise Minitest::Assertion, msg
       end
+      sleep 1
       true
     end
   end
