@@ -176,7 +176,7 @@ module RokuBuilder
     end
 
     def test_key_file
-      unless File.exist?(@parsed[:key][:keyed_pkg])
+      if @parsed[:key] and not File.exist?(@parsed[:key][:keyed_pkg])
         raise ParseError, "Bad key file: #{@parsed[:key][:keyed_pkg]}"
       end
     end
