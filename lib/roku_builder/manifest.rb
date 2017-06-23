@@ -111,9 +111,8 @@ module RokuBuilder
         major_version: 1,
         minor_version: 0,
         build_version: "010101.0001",
-        mm_icon_focus_fhd: "<insert fhd focus icon url>",
         mm_icon_focus_hd: "<insert hd focus icon url>",
-        mm_icon_focus_sd: "<insert sd focus icon url>"
+        splash_screen_fhd: "<insert fhd splash screen url>"
       }
     end
   end

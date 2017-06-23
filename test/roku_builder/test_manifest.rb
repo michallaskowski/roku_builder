@@ -70,9 +70,8 @@ module RokuBuilder
       assert !!manifest.major_version
       assert !!manifest.minor_version
       assert !!manifest.build_version
-      assert !!manifest.mm_icon_focus_fhd
       assert !!manifest.mm_icon_focus_hd
-      assert !!manifest.mm_icon_focus_sd
+      assert !!manifest.splash_screen_fhd
     end
     def test_manifest_increment_build_version
       manifest = Manifest.new(config: @config)

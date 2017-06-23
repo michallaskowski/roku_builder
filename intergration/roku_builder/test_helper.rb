@@ -103,7 +103,7 @@ module Helpers
       devices: {
       default: :roku,
       roku: {
-      ip: "192.168.1.127",
+      ip: "192.168.1.114",
       user: "rokudev",
       password: "aaaa"
     }
