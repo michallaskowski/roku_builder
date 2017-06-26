@@ -146,17 +146,18 @@ module RokuBuilder
       out_file = nil
       unless @config.out[:file]
         out = @config.out
+        build_version = Manifest.new(config: @config).build_version
         if stage
-          out[:file] = "#{@config.project[:app_name]}_#{stage}"
+          out[:file] = "#{@config.project[:app_name]}_#{stage}_#{build_version}"
         else
-          out[:file] = "#{@config.project[:app_name]}_working"
+          out[:file] = "#{@config.project[:app_name]}_working_#{build_version}"
         end
         @config.out = out
       end
       out_file = File.join(@config.out[:folder], @config.out[:file])
       out_file = out_file+".pkg" unless out_file.end_with?(".pkg")
       File.open(out_file, 'w+') {|fp| fp.write(response.body)}
-      true
+      @logger.info("Outfile: #{out_file}")
     end
 
     # Uses the device to generate a new signing key

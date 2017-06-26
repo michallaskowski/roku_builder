@@ -17,14 +17,14 @@ module RokuBuilder
     def test_sideload
       output = `#{roku} --sideload --stage production`
       assert_log @uuid
-      refute(/WARN: Missing File/.match(output))
+      refute_match(/WARN: Missing File/, output)
     end
     def test_delete
       `#{roku} --sideload --working`
       assert_log @uuid
       `#{roku} --delete`
       output = `#{roku} --app-list`
-      refute(/\|\s*dev\s*\|/.match(output))
+      refute_match(/\|\s*dev\s*\|/, output)
     end
     def test_build
       target = File.join(testfiles_path(LoaderIntergrationTest), "out.zip")

@@ -43,9 +43,10 @@ module RokuBuilder
         did_build = true
         build(options: options)
       end
+      keep_build_file = is_build_command(options) and options[:out]
       upload
       # Cleanup
-      File.delete(file_path(:in)) if did_build and not options[:out]
+      File.delete(file_path(:in)) if did_build and not keep_build_file
     end
 
 
@@ -66,6 +67,10 @@ module RokuBuilder
     end
 
     private
+
+    def is_build_command(options)
+      [:sideload, :build].include? options.command
+    end
 
     def upload
       payload =  {

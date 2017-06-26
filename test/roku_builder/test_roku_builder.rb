@@ -6,7 +6,7 @@ module RokuBuilder
   class RokuBuilderTest < Minitest::Test
     def setup
       Logger.set_testing
-      RokuBuilder.class_variable_set(:@@plugins, [])
+      RokuBuilder.setup_plugins
       @ping = Minitest::Mock.new
       @options = build_options({validate: true, device_given: false, working: true})
       @options.define_singleton_method(:device_commands){
