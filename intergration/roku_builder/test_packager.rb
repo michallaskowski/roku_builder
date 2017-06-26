@@ -33,6 +33,15 @@ module RokuBuilder
       refute File.exist?(target+".zip")
       FileUtils.rm(target) if File.exist?(target)
     end
+    def test_package_no_key
+      config = good_config(PackagerIntergrationTest)
+      config[:projects][:project1][:stages][:production].delete(:key)
+      @config = build_config(PackagerIntergrationTest, nil, config)
+      target = File.join(testfiles_path(PackagerIntergrationTest), "pkg.pkg")
+      FileUtils.rm(target) if File.exist?(target)
+      output = `#{roku} --package --stage production --out #{target}`
+      assert_match(/FATAL:.*Missing Key/, output)
+    end
     def test_key
       target = File.join(testfiles_path(PackagerIntergrationTest), "pkg.pkg")
       `#{roku} --genkey --out #{target}`

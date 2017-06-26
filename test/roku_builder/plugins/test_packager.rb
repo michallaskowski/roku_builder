@@ -188,6 +188,19 @@ module RokuBuilder
       end
     end
 
+    def test_packager_no_key
+      config = good_config(PackagerTest)
+      config[:projects][:project1][:stages][:production].delete(:key)
+      config, options = build_config_options_objects(PackagerTest, {key: true, stage: "production"}, false, config)
+      packager = Packager.new(config: config)
+      dev_id = Proc.new {"#{Random.rand(999999999999)}"}
+      assert_raises ExecutionError do
+        packager.stub(:dev_id, dev_id) do
+          packager.key(options: options)
+        end
+      end
+    end
+
     def test_packager_genkey
       loader = Minitest::Mock.new
       loader.expect(:sideload, nil, [Hash])

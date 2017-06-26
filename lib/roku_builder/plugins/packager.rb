@@ -84,6 +84,8 @@ module RokuBuilder
     def key(options:)
       oldId = dev_id
 
+      raise ExecutionError, "Missing Key Config" unless @config.key
+
       # upload new key with password
       payload =  {
         mysubmit: "Rekey",

@@ -27,10 +27,14 @@ def register_plugins(plugin_class)
     end
   end
 end
-def build_config_options_objects(klass, options = {validate: true}, empty_plugins = true)
+def build_config_options_objects(klass, options = {validate: true}, empty_plugins = true, config_hash = nil)
   options = build_options(options, empty_plugins)
   config = RokuBuilder::Config.new(options: options)
-  config.instance_variable_set(:@config, good_config(klass))
+  if config_hash
+    config.instance_variable_set(:@config, config_hash)
+  else
+    config.instance_variable_set(:@config, good_config(klass))
+  end
   config.parse
   [config, options]
 end
