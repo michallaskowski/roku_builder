@@ -12,7 +12,9 @@ module RokuBuilder
       end
       @options = build_options({monitor: "main"}, false)
       @config = Config.new(options: @options)
-      @connection = Minitest::Mock.new
+      @connection = Object.new()
+      @connection.define_singleton_method(:waitfor) {}
+      @connection.define_singleton_method(:puts) {}
       device_config = {
         ip: "111.222.333",
         user: "user",
@@ -20,9 +22,6 @@ module RokuBuilder
       }
       @config.instance_variable_set(:@parsed, {device_config: device_config, init_params: {}})
       @monitor = Monitor.new(config: @config)
-    end
-    def teardown
-      @connection.verify
     end
     def test_scripter_parse_options_long
       parser = OptionParser.new
@@ -43,11 +42,10 @@ module RokuBuilder
       assert_equal "regexp", options[:regexp]
     end
     def test_monitor_monit
-      @connection.expect(:waitfor, nil) do |config|
-        assert_equal(/./, config['Match'])
-        assert_equal(false, config['Timeout'])
-      end
-
+      count = 0
+      waitfor = proc {
+        count += 1
+      }
       readline = proc {
         sleep(0.1)
         "q"
@@ -55,47 +53,50 @@ module RokuBuilder
 
       Readline.stub(:readline, readline) do
         Net::Telnet.stub(:new, @connection) do
-          @monitor.monitor(options: @options)
-        end
-      end
-
-    end
-
-    def test_monitor_monit_and_manage
-      @monitor.instance_variable_set(:@show_prompt, true)
-
-      @connection.expect(:waitfor, nil) do |config, &blk|
-        assert_equal(/./, config['Match'])
-        assert_equal(false, config['Timeout'])
-        txt = "Fake Text"
-        blk.call(txt) == ""
-      end
-
-      readline = proc {
-        sleep(0.1)
-        "q"
-      }
-
-      Readline.stub(:readline, readline) do
-        Net::Telnet.stub(:new, @connection) do
-          @monitor.stub(:manage_text, "") do
+          @connection.stub(:waitfor, waitfor, "txt") do
             @monitor.monitor(options: @options)
           end
         end
       end
+
+      assert count > 0
+    end
+
+    def test_monitor_monit_and_manage
+      @monitor.instance_variable_set(:@show_prompt, true)
+      count = 0
+      waitfor = proc {
+        count += 1
+      }
+      readline = proc {
+        sleep(0.1)
+        "q"
+      }
+      Readline.stub(:readline, readline) do
+        Net::Telnet.stub(:new, @connection) do
+          @connection.stub(:waitfor, waitfor, "txt") do
+            @monitor.stub(:manage_text, "") do
+              @monitor.monitor(options: @options)
+            end
+          end
+        end
+      end
+      assert count > 0
     end
 
     def test_monitor_monit_input
       @monitor.instance_variable_set(:@show_prompt, true)
+      wait_count = 0
+      waitfor = proc {
+        wait_count += 1
+      }
 
-      @connection.expect(:waitfor, nil) do |config|
-        assert_equal(/./, config['Match'])
-        assert_equal(false, config['Timeout'])
-      end
-      @connection.expect(:puts, nil) do |text|
+      puts_count = 0
+      puts = proc { |text|
+        puts_count += 1
         assert_equal("text", text)
         @monitor.instance_variable_set(:@show_prompt, true)
-      end
+      }
 
       readline = proc {
         @count ||= 0
@@ -111,9 +112,15 @@ module RokuBuilder
 
       Readline.stub(:readline, readline) do
         Net::Telnet.stub(:new, @connection) do
-          @monitor.monitor(options: @options)
+          @connection.stub(:waitfor, waitfor, "txt") do
+            @connection.stub(:puts, puts) do
+              @monitor.monitor(options: @options)
+            end
+          end
         end
       end
+      assert wait_count > 0
+      assert puts_count > 0
     end
 
     def test_monitor_manage_text
@@ -136,6 +143,12 @@ module RokuBuilder
 
       mock.verify
 
+    end
+
+    def test_monitor_manage_text_connection_used
+      assert_raises ExecutionError do
+        @monitor.send(:manage_text, {all_text: "", txt: "Console connection is already in use."})
+      end
     end
   end
 end

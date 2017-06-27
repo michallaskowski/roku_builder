@@ -47,6 +47,7 @@ module RokuBuilder
           end
         end
       }
+      thread.abort_on_exception = true
 
       init_readline()
 
@@ -112,6 +113,9 @@ module RokuBuilder
     #  @param regexp [Regexp] regular expression to filter text on
     #  @return [String] remaining partial line text
     def manage_text(all_text:, txt:, regexp: nil)
+      if /connection is already in use/ =~ txt
+        raise ExecutionError, "Connection is in use"
+      end
       all_text += txt
       while line = all_text.slice!(/^.*\n/) do
         if !line.strip.empty?
