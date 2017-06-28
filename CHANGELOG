@@ -1,3 +1,13 @@
+ = 4.1.0 =
+
+ - Remove unnecessary default manifest values
+ - Print PKG path when packaging with --verbose
+ - Add build number to default out file name for packager
+ - Fail with useful message when packaging without configured key
+ - Monitor will check for used connection
+ - Screens command now prints all key combinations
+ - Replace nokogiri with oga
+
  = 4.0.1 =
 
  - Fix sideload bug

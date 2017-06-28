@@ -62,8 +62,6 @@ directory:
 
  * Fix file naming when building from a referance
  * Add configuration option for build_version format
- * Check if keying with bad password
- * Check if missing key config when required
 
 ## Contributing
 
