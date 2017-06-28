@@ -105,7 +105,6 @@ module RokuBuilder
       @requests.push(stub_request(:post, "http://192.168.0.100:8060/keypress/Rev").
         to_return(status: 200, body: "", headers: {}))
 
-      logger.expect(:info, nil, ["Home x 5, Fwd x 3, Rev x 2,"])
       5.times do
         logger.expect(:debug, nil, ["Send Command: /keypress/Home"])
       end
@@ -123,15 +122,19 @@ module RokuBuilder
     end
     def test_navigator_screen_reboot
       logger = Minitest::Mock.new
+      command_logger = Minitest::Mock.new
       Logger.class_variable_set(:@@instance, logger)
       options = {screen: "reboot"}
       config, options = build_config_options_objects(NavigatorTest, options, false)
       navigator = Navigator.new(config: config)
 
       logger.expect(:unknown, nil, ["Cannot run command automatically"])
-      logger.expect(:unknown, nil, ["Home x 5, Up, Rev x 2, Fwd x 2,"])
+      command_logger.expect(:unknown, nil, ["Home x 5, Up, Rev x 2, Fwd x 2,"])
+      command_logger.expect(:formatter=, nil, [Proc])
 
-      navigator.screen(options: options)
+      ::Logger.stub(:new, command_logger) do
+        navigator.screen(options: options)
+      end
 
       logger.verify
       Logger.set_testing
@@ -153,11 +156,22 @@ module RokuBuilder
       config, options = build_config_options_objects(NavigatorTest, options, false)
       navigator = Navigator.new(config: config)
 
+      logger.expect(:formatter=, nil, [Proc])
+      logger.expect(:unknown, nil) do |msg|
+        /-+/=~ msg
+      end
       navigator.instance_variable_get("@screens").each_key do |key|
-        logger.expect(:unknown, nil, [key])
+        logger.expect(:unknown, nil) do |msg|
+          /#{key}:/=~ msg
+        end
+        logger.expect(:unknown, nil) do |msg|
+          /-+/=~ msg
+        end
       end
 
-      navigator.screens(options: options)
+      ::Logger.stub(:new, logger) do
+        navigator.screens(options: options)
+      end
 
       logger.verify
       Logger.set_testing

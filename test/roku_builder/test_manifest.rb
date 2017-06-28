@@ -37,6 +37,7 @@ module RokuBuilder
       @config.instance_variable_set(:@parsed, {root_dir: File.join(@root_dir, "test.zip")})
       manifest = Manifest.new(config: @config)
       assert_equal "010101.1", manifest.build_version
+      @config.instance_variable_set(:@parsed, {root_dir: @root_dir})
     end
     def test_manifest_update_attributes
       manifest = Manifest.new(config: @config)

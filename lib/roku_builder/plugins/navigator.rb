@@ -129,13 +129,21 @@ module RokuBuilder
         nav(options: {nav: @screens[type].join(", ")})
       else
         @logger.unknown("Cannot run command automatically")
+        display_screen_command(type)
       end
-      display_screen_command(type)
     end
 
     # Show avaiable roku secret screens
     def screens(options:)
-      @screens.keys.each {|screen| @logger.unknown(screen)}
+      logger = ::Logger.new(STDOUT)
+      logger.formatter = proc {|_severity, _datetime, _progname, msg|
+        "%s\n\r" % [msg]
+      }
+      logger.unknown("----------------------------------------------------------------------")
+      @screens.keys.each {|screen|
+        logger.unknown(sprintf("%10s: %s", screen.to_s, get_screen_command(screen)))
+        logger.unknown("----------------------------------------------------------------------")
+      }
     end
 
     private
@@ -208,6 +216,14 @@ module RokuBuilder
     end
 
     def display_screen_command(type)
+      logger = ::Logger.new(STDOUT)
+      logger.formatter = proc {|_severity, _datetime, _progname, msg|
+        "%s\n\r" % [msg]
+      }
+      logger.unknown(get_screen_command(type))
+    end
+
+    def get_screen_command(type)
       display, count, string = [], [], ""
       @screens[type].each do |command|
         if display.count > 0 and  display[-1] == command
@@ -224,11 +240,7 @@ module RokuBuilder
           string = string + @commands[display[i]]+", "
         end
       end
-      if @runable.include?(type)
-        @logger.info(string.strip)
-      else
-        @logger.unknown(string.strip)
-      end
+      string.strip
     end
   end
   RokuBuilder.register_plugin(Navigator)
