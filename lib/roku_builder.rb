@@ -14,7 +14,7 @@ require 'json'
 require 'pstore'
 require "git"
 #profiler
-require 'nokogiri'
+require 'oga'
 #navigator
 require 'io/console'
 #monitor

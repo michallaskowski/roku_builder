@@ -15,6 +15,8 @@ require "minitest/autorun"
 require "minitest/utils"
 require "securerandom"
 
+ROKU_IP = "192.168.1.114"
+
 module Minitest
   module Assertions
     def wait_assert(timeout = 10, msg = nil)
@@ -103,7 +105,7 @@ module Helpers
       devices: {
       default: :roku,
       roku: {
-      ip: "192.168.1.127",
+      ip: ROKU_IP,
       user: "rokudev",
       password: "aaaa"
     }

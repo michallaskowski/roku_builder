@@ -41,8 +41,8 @@ module RokuBuilder
       lines = get_command_response(command: "sgnodes all", start_reg: start_reg, end_reg: end_reg)
       xml_string = lines.join("\n")
       stats = {"Total" => 0}
-      doc = Nokogiri::XML(xml_string)
-      handle_node(stats: stats, node: doc.root)
+      doc = Oga.parse_xml(xml_string)
+      handle_node(stats: stats, node: doc.children.first)
       stats = stats.to_a
       stats = stats.sort {|a, b| b[1] <=> a[1]}
       printf "%30s | %5s\n", "Name", "Count"
@@ -52,7 +52,8 @@ module RokuBuilder
     end
 
     def handle_node(stats:,  node:)
-      node.element_children.each do |element|
+      node.children.each do |element|
+        next unless element.class == Oga::XML::Element
         stats[element.name] ||= 0
         stats[element.name] += 1
         stats["Total"] += 1

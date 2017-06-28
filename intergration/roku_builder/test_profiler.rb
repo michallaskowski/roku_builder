@@ -18,31 +18,31 @@ module RokuBuilder
       `#{roku} --sideload --working`
       assert_log @uuid
       output = `#{roku} --profile stats`
-      assert output =~ /Name \| Count/
-      assert output =~ /Total \|\s*5/
-      assert output =~ /Default \|\s*1/
-      assert output =~ /RectangleExample \|\s*1/
-      assert output =~ /Poster \|\s*1/
-      assert output =~ /Node \|\s*1/
-      assert output =~ /Rectangle \|\s*1/
+      assert_match(/Name \| Count/, output)
+      assert_match(/Total \|\s*5/, output)
+      assert_match(/Default \|\s*1/, output)
+      assert_match(/RectangleExample \|\s*1/, output)
+      assert_match(/Poster \|\s*1/, output)
+      assert_match(/Node \|\s*1/, output)
+      assert_match(/Rectangle \|\s*1/, output)
     end
     def test_profile_all
       `#{roku} --sideload --working`
       assert_log @uuid
       output = `#{roku} --profile all`
-      assert output =~ /RectangleExample/
+      assert_match(/RectangleExample/, output)
     end
     def test_profile_images
       `#{roku} --sideload --working`
       assert_log @uuid
       output = `#{roku} --profile images`
-      assert output =~ /Available memory/
+      assert_match(/Available memory/, output)
     end
     def test_profile_textures
       `#{roku} --sideload --working`
       assert_log @uuid
       output = `#{roku} --profile textures`
-      assert output =~ /System textures/
+      assert_match(/System textures/, output)
     end
   end
 end
