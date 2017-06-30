@@ -102,9 +102,9 @@ module RokuBuilder
       running = true
       @logger.info("Key Mappings:")
       @mappings.each_value {|key|
-        @logger.info("#{key[1]} -> #{@commands[key[0].to_sym]}")
+        @logger.info(sprintf("%13s -> %s", key[1], @commands[key[0].to_sym]))
       }
-      @logger.info("Control-C -> Exit")
+      @logger.info(sprintf("%13s -> %s", "Ctrl + c", "Exit"))
       while running
         char = read_char
         @logger.debug("Char: #{char.inspect}")
