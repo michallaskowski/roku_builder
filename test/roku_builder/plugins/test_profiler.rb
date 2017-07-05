@@ -15,17 +15,16 @@ module RokuBuilder
       parser = OptionParser.new
       options = {}
       Profiler.parse_options(parser: parser, options: options)
-      argv = ["roku", "--profile", "command"]
+      argv = ["roku", "--profile", "command", "--sgperf", "--devlog", "on"]
       parser.parse! argv
       assert_equal "command", options[:profile]
     end
     def test_profiler_stats
-      Logger.set_testing
       options = {profile: "stats"}
       config, options = build_config_options_objects(ProfilerTest, options, false)
       waitfor = Proc.new do |telnet_config, &blk|
         assert_equal(/.+/, telnet_config["Match"])
-        assert_equal(5, telnet_config["Timeout"])
+        assert_equal(1, telnet_config["Timeout"])
         txt = "<All_Nodes><NodeA /><NodeB /><NodeC><NodeD /></NodeC></All_Nodes>\n"
         blk.call(txt)
         true
@@ -45,12 +44,11 @@ module RokuBuilder
       connection.verify
     end
     def test_profiler_all
-      Logger.set_testing
       options = {profile: "all"}
       config, options = build_config_options_objects(ProfilerTest, options, false)
       waitfor = Proc.new do |telnet_config, &blk|
         assert_equal(/.+/, telnet_config["Match"])
-        assert_equal(5, telnet_config["Timeout"])
+        assert_equal(1, telnet_config["Timeout"])
         txt = "<All_Nodes><NodeA /><NodeB /><NodeC><NodeD /></NodeC></All_Nodes>\n"
         blk.call(txt)
         true
@@ -69,13 +67,58 @@ module RokuBuilder
 
       connection.verify
     end
+    def test_profiler_roots
+      options = {profile: "roots"}
+      config, options = build_config_options_objects(ProfilerTest, options, false)
+      waitfor = Proc.new do |telnet_config, &blk|
+        assert_equal(/.+/, telnet_config["Match"])
+        assert_equal(1, telnet_config["Timeout"])
+        txt = "<Root_Nodes><NodeA /><NodeB /><NodeC><NodeD /></NodeC></Root_Nodes>\n"
+        blk.call(txt)
+        true
+      end
+      connection = Minitest::Mock.new
+      profiler = Profiler.new(config: config)
+
+      connection.expect(:puts, nil, ["sgnodes roots\n"])
+      connection.expect(:waitfor, nil, &waitfor)
+
+      Net::Telnet.stub(:new, connection) do
+        profiler.stub(:print, nil) do
+          profiler.profile(options: options)
+        end
+      end
+      connection.verify
+    end
+    def test_profiler_node
+      options = {profile: "nodeId"}
+      config, options = build_config_options_objects(ProfilerTest, options, false)
+      waitfor = Proc.new do |telnet_config, &blk|
+        assert_equal(/.+/, telnet_config["Match"])
+        assert_equal(1, telnet_config["Timeout"])
+        txt = "<nodeId><NodeA /><NodeB /><NodeC><NodeD /></NodeC></nodeId>\n"
+        blk.call(txt)
+        true
+      end
+      connection = Minitest::Mock.new
+      profiler = Profiler.new(config: config)
+
+      connection.expect(:puts, nil, ["sgnodes nodeId\n"])
+      connection.expect(:waitfor, nil, &waitfor)
+
+      Net::Telnet.stub(:new, connection) do
+        profiler.stub(:print, nil) do
+          profiler.profile(options: options)
+        end
+      end
+      connection.verify
+    end
     def test_profiler_images
-      Logger.set_testing
       options = {profile: "images"}
       config, options = build_config_options_objects(ProfilerTest, options, false)
       waitfor = Proc.new do |telnet_config, &blk|
         assert_equal(/.+/, telnet_config["Match"])
-        assert_equal(5, telnet_config["Timeout"])
+        assert_equal(1, telnet_config["Timeout"])
         txt = " RoGraphics instance\nAvailable memory\n"
         blk.call(txt)
         true
@@ -95,12 +138,11 @@ module RokuBuilder
       connection.verify
     end
     def test_profiler_textures
-      Logger.set_testing
       options = {profile: "textures"}
       config, options = build_config_options_objects(ProfilerTest, options, false)
       waitfor = Proc.new do |telnet_config, &blk|
         assert_equal(/.+/, telnet_config["Match"])
-        assert_equal(5, telnet_config["Timeout"])
+        assert_equal(1, telnet_config["Timeout"])
         txt = "*******\ntexture\n"
         blk.call(txt)
         true
@@ -122,6 +164,122 @@ module RokuBuilder
       end
 
       connection.verify
+    end
+    def test_profiler_devlog
+      options = {devlog: "rendezvous", devlog_function: "on"}
+      config, options = build_config_options_objects(ProfilerTest, options, false)
+
+      connection = Minitest::Mock.new
+      connection.expect(:puts, nil, ["enhanced_dev_log rendezvous on\n"])
+
+      profiler = Profiler.new(config: config)
+      Net::Telnet.stub(:new, connection) do
+        profiler.devlog(options: options)
+      end
+      connection.verify
+    end
+    def test_profiler_sgperf
+      options = {sgperf: true}
+      config, options = build_config_options_objects(ProfilerTest, options, false)
+      profiler = Profiler.new(config: config)
+
+      connection = Object.new
+      connection.define_singleton_method(:puts){}
+      connection.define_singleton_method(:waitfor){}
+
+      message_count = {}
+      puts_stub = Proc.new { |message|
+        message_count[message] ||= 0
+        message_count[message] += 1
+        case message
+        when "sgperf clear\n"
+          assert_equal 1, message_count[message]
+        when "sgperf start\n"
+          assert_equal 1, message_count[message]
+        when "sgperf report\n"
+          if message_count[message] > 1
+            raise SystemExit
+          end
+        end
+      }
+      waitfor = Proc.new {|telnet_config|
+        assert_equal(/.+/, telnet_config["Match"])
+        assert_equal(1, telnet_config["Timeout"])
+        raise Net::ReadTimeout
+        true
+      }
+
+      Net::Telnet.stub(:new, connection) do
+        connection.stub(:puts, puts_stub) do
+          txt = ">>thread node calls: create     0 + op    24  @ 100.0% rendezvous"
+          connection.stub(:waitfor, waitfor, txt) do
+            profiler.sgperf(options: options)
+          end
+        end
+      end
+
+      assert(0 < message_count["sgperf clear\n"])
+      assert(0 < message_count["sgperf start\n"])
+      assert(0 < message_count["sgperf report\n"])
+
+    end
+    def test_profiler_sgperf_multi_lines
+      options = {sgperf: true}
+      config, options = build_config_options_objects(ProfilerTest, options, false)
+      profiler = Profiler.new(config: config)
+
+      connection = Object.new
+      connection.define_singleton_method(:puts){}
+      connection.define_singleton_method(:waitfor){}
+
+      message_count = {}
+      connection_puts = Proc.new { |message|
+        message_count[message] ||= 0
+        message_count[message] += 1
+        case message
+        when "sgperf clear\n"
+          assert_equal 1, message_count[message]
+        when "sgperf start\n"
+          assert_equal 1, message_count[message]
+        end
+      }
+      first = true
+      command_response = Proc.new { 
+        if first
+          first = false
+          txt = [">>thread node calls: create     0 + op    24  @ 0.0% rendezvous",
+            "thread node calls: create     1 + op    0  @ 100.0% rendezvous",
+            "thread node calls: create     0 + op    1  @ 100.0% rendezvous"]
+        else
+          raise SystemExit
+        end
+      }
+      call_count = 0
+      profiler_puts = Proc.new { |message|
+        case call_count
+        when 0
+          assert_equal("Thread 0: c:0 u:24 r:0.0%", message)
+        when 1
+          assert_equal("Thread 1: c:1 u:0 r:100.0%", message)
+        when 2
+          assert_equal("Thread 2: c:0 u:1 r:100.0%", message)
+        end
+        call_count += 1
+      }
+
+      Net::Telnet.stub(:new, connection) do
+        connection.stub(:puts, connection_puts) do
+          profiler.stub(:get_command_response, command_response) do
+            profiler.stub(:puts, profiler_puts) do
+              profiler.sgperf(options: options)
+            end
+          end
+        end
+      end
+
+      assert(0 < message_count["sgperf clear\n"])
+      assert(0 < message_count["sgperf start\n"])
+
     end
   end
 end

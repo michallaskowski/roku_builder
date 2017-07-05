@@ -7,13 +7,24 @@ module RokuBuilder
     extend Plugin
 
     def self.commands
-      {profile: {device: true}}
+      {
+        profile: {device: true},
+        sgperf: {device: true},
+        devlog: {device: true}
+      }
     end
 
     def self.parse_options(parser:, options:)
       parser.separator "Commands:"
       parser.on("--profile COMMAND", "Run various profiler options") do |c|
         options[:profile] = c
+      end
+      parser.on("--sgperf", "Run scenegraph profiler") do
+        options[:sgperf] = true
+      end
+      parser.on("--devlog FUNCTION [TYPE]", "Run scenegraph profiler") do |f, t|
+        options[:devlog] = t || "rendezvous"
+        options[:devlog_function] = f
       end
     end
 
@@ -25,11 +36,59 @@ module RokuBuilder
         print_stats
       when :all
         print_all_nodes
+      when :roots
+        print_root_nodes
       when :images
         print_image_information
       when :textures
         print_texture_information
+      else
+        print_nodes_by_id(options[:profile])
       end
+    end
+
+    def sgperf(options:)
+      telnet_config ={
+        'Host' => @roku_ip_address,
+        'Port' => 8080
+      }
+      connection = Net::Telnet.new(telnet_config)
+      connection.puts("sgperf clear\n")
+      connection.puts("sgperf start\n")
+      start_reg = />thread/
+      end_reg = /#{SecureRandom.uuid}/
+      prev_lines = 0
+      begin
+      while true
+        lines = get_command_response(command: "sgperf report", start_reg: start_reg,
+          end_reg: end_reg, unique: true, connection: connection, ignore_warnings: true)
+        results = []
+        lines.each do |line|
+          match = /thread node calls: create\s*(\d*) \+ op\s*(\d*)\s*@\s*(\d*\.\d*)% rendezvous/.match(line)
+          results.push([match[1].to_i, match[2].to_i, match[3].to_f])
+        end
+        print "\r" + ("\e[A\e[K"*prev_lines)
+        prev_lines = 0
+        results.each_index do |i|
+          line = results[i]
+          if line[0] > 0 or line[1] > 0
+            prev_lines += 1
+            puts "Thread #{i}: c:#{line[0]} u:#{line[1]} r:#{line[2]}%"
+          end 
+        end
+      end
+      rescue SystemExit, Interrupt
+        #Exit
+      end
+    end
+
+    def devlog(options:)
+      telnet_config ={
+        'Host' => @roku_ip_address,
+        'Port' => 8080
+      }
+      connection = Net::Telnet.new(telnet_config)
+      connection.puts("enhanced_dev_log #{options[:devlog]} #{options[:devlog_function]}\n")
     end
 
     private
@@ -67,6 +126,18 @@ module RokuBuilder
       lines = get_command_response(command: "sgnodes all", start_reg: start_reg, end_reg: end_reg)
       lines.each {|line| print line}
     end
+    def print_root_nodes
+      start_reg = /<Root_Nodes>/
+      end_reg = /<\/Root_Nodes>/
+      lines = get_command_response(command: "sgnodes roots", start_reg: start_reg, end_reg: end_reg)
+      lines.each {|line| print line}
+    end
+    def print_nodes_by_id(id)
+      start_reg = /<#{id}>/
+      end_reg = /<\/#{id}>/
+      lines = get_command_response(command: "sgnodes #{id}", start_reg: start_reg, end_reg: end_reg)
+      lines.each {|line| print line}
+    end
     def print_image_information
       start_reg = /RoGraphics instance/
       end_reg = /Available memory/
@@ -82,17 +153,18 @@ module RokuBuilder
 
     # Retrive list of all nodes
     # @return [Array<String>] Array of lines
-    def get_command_response(command:, start_reg:, end_reg:, unique: false)
+    def get_command_response(command:, start_reg:, end_reg:, unique: false, connection: nil, ignore_warnings: false)
       waitfor_config = {
         'Match' => /.+/,
-        'Timeout' => 5
+        'Timeout' => 1
       }
-      telnet_config ={
-        'Host' => @roku_ip_address,
-        'Port' => 8080
-      }
-
-      connection = Net::Telnet.new(telnet_config)
+      unless connection
+        telnet_config ={
+          'Host' => @roku_ip_address,
+          'Port' => 8080
+        }
+        connection = Net::Telnet.new(telnet_config)
+      end
 
       @lines = []
       @all_txt = ""
@@ -105,7 +177,7 @@ module RokuBuilder
             handle_text(txt: txt, start_reg: start_reg, end_reg: end_reg, unique: unique)
           end
         rescue Net::ReadTimeout
-          @logger.warn "Timed out reading profiler information"
+          @logger.warn "Timed out reading profiler information" unless ignore_warnings
           @done = true
         end
       end

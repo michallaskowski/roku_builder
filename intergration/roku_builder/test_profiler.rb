@@ -32,6 +32,18 @@ module RokuBuilder
       output = `#{roku} --profile all`
       assert_match(/RectangleExample/, output)
     end
+    def test_profile_roots
+      `#{roku} --sideload --working`
+      assert_log @uuid
+      output = `#{roku} --profile roots`
+      assert_match(/Default/, output)
+    end
+    def test_profile_node
+      `#{roku} --sideload --working`
+      assert_log @uuid
+      output = `#{roku} --profile exampleRectangle`
+      assert_match(/name="exampleRectangle"/, output)
+    end
     def test_profile_images
       `#{roku} --sideload --working`
       assert_log @uuid

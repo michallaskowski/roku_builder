@@ -66,9 +66,10 @@ module RokuBuilder
       end
 
       commands = [
-        "bsc", "bscs", "brkd", "bt", "classes", "cont", "cont", "down", "d",
-        "exit", "gc", "help", "last", "list", "next", "print", "p", "?", "step",
-        "s", "t", "over", "out", "up", "u", "var", "q"
+        "bsc", "bscs", "brkd", "bt", "c", "classes", "cont", "cont", "down", "d",
+        "exit", "gc", "help", "l", "last", "list", "n", "next", "o", "print",
+        "p", "?", "s", "stats", "step", "t", "th", "thread", "threads", "ths",
+        "over", "out", "up", "u", "q", "v", "var"
       ].sort
       commands.collect { |i| i + ' '  } if libedit
 
