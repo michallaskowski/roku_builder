@@ -206,7 +206,6 @@ module RokuBuilder
         assert_equal(/.+/, telnet_config["Match"])
         assert_equal(1, telnet_config["Timeout"])
         raise Net::ReadTimeout
-        true
       }
 
       Net::Telnet.stub(:new, connection) do

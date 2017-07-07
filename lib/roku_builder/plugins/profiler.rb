@@ -74,7 +74,7 @@ module RokuBuilder
           if line[0] > 0 or line[1] > 0
             prev_lines += 1
             puts "Thread #{i}: c:#{line[0]} u:#{line[1]} r:#{line[2]}%"
-          end 
+          end
         end
       end
       rescue SystemExit, Interrupt
@@ -142,6 +142,7 @@ module RokuBuilder
       start_reg = /RoGraphics instance/
       end_reg = /Available memory/
       lines = get_command_response(command: "r2d2_bitmaps", start_reg: start_reg, end_reg: end_reg)
+      lines = sort_image_lines(lines)
       lines.each {|line| print line}
     end
     def print_texture_information
@@ -194,6 +195,7 @@ module RokuBuilder
       while line = @all_txt.slice!(/^.*\n/) do
         if line =~ start_reg
           @begun = true
+          @done = false
           @lines = [] if unique
         end
         @lines.push(line) if @begun
@@ -202,6 +204,24 @@ module RokuBuilder
           @done = true
         end
       end
+    end
+
+    def sort_image_lines(lines)
+      new_lines = []
+      line = lines.shift
+      while line != nil
+        reg = /0x[^\s]+\s+\d+\s+\d+\s+\d+\s+\d+/
+        line_data = []
+        while line =~ reg
+          line_data.push({line: line, size: line.split[4].to_i})
+          line = lines.shift
+        end
+        line_data.sort! {|a, b| b[:size] <=> a[:size]}
+        line_data.each {|data| new_lines.push(data[:line])}
+        new_lines.push(line)
+        line = lines.shift
+      end
+      return new_lines
     end
   end
   RokuBuilder.register_plugin(Profiler)
