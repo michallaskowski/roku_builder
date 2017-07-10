@@ -5,7 +5,8 @@ require_relative "test_helper.rb"
 module RokuBuilder
   class OptionsTest < Minitest::Test
     def setup
-      RokuBuilder.class_variable_set(:@@plugins, [])
+      RokuBuilder.setup_plugins
+      register_plugins(Core)
       Logger.set_testing
     end
     def teardown
@@ -36,8 +37,10 @@ module RokuBuilder
       parser.expect(:banner=, nil, [String])
       parser.expect(:parse!, nil)
       OptionParser.stub(:new, parser) do
-        options.stub(:validate_parser, nil) do
-          options_hash = options.send(:parse)
+        options.stub(:add_plugin_options, nil) do
+          options.stub(:validate_parser, nil) do
+            options_hash = options.send(:parse)
+          end
         end
       end
       parser.verify
@@ -50,12 +53,14 @@ module RokuBuilder
       parser.expect(:banner=, nil, [String])
       parser.expect(:parse!, nil)
       OptionParser.stub(:new, parser) do
-        options.send(:parse)
+        options.stub(:add_plugin_options, nil) do
+          options.send(:parse)
+        end
       end
       parser.verify
       Array.class_eval { remove_method :each_option  }
     end
-    def test_options_parse_validate_options_bad
+    def test_options_parse_validate_options_bad_short
       Array.class_eval { alias_method :each_option, :each  }
       parser = Minitest::Mock.new()
       options = Options.allocate
@@ -64,13 +69,32 @@ module RokuBuilder
 
       OptionParser.stub(:new, parser) do
         assert_raises(ImplementationError) do
-          options.send(:parse)
+          options.stub(:add_plugin_options, nil) do
+            options.send(:parse)
+          end
         end
       end
       parser.verify
       Array.class_eval { remove_method :each_option  }
     end
-    def build_stack(good = true)
+    def test_options_parse_validate_options_bad_long
+      Array.class_eval { alias_method :each_option, :each  }
+      parser = Minitest::Mock.new()
+      options = Options.allocate
+      parser.expect(:banner=, nil, [String])
+      parser.expect(:instance_variable_get, build_stack(true, false), [:@stack])
+
+      OptionParser.stub(:new, parser) do
+        options.stub(:add_plugin_options, nil) do
+          assert_raises(ImplementationError) do
+            options.send(:parse)
+          end
+        end
+      end
+      parser.verify
+      Array.class_eval { remove_method :each_option  }
+    end
+    def build_stack(shortgood = true, longgood = true)
       optionsA = Minitest::Mock.new()
       optionsB = Minitest::Mock.new()
       list = [optionsA, optionsB]
@@ -78,11 +102,14 @@ module RokuBuilder
       3.times do
         optionsA.expect(:short, [ "a" ])
         optionsA.expect(:long, [ "aOption" ])
-        if good
+        if shortgood
           optionsB.expect(:short, [ "b" ])
-          optionsB.expect(:long, ["bOption" ])
         else
           optionsB.expect(:short, [ "a" ])
+        end
+        if longgood
+          optionsB.expect(:long, ["bOption" ])
+        else
           optionsB.expect(:long, [ "aOption" ])
         end
       end
@@ -101,6 +128,15 @@ module RokuBuilder
       options = {}
       assert_raises InvalidOptions do
         build_options(options)
+      end
+    end
+    def test_options_validate_source
+      options = Options.allocate
+      options.stub(:source_command?, true) do
+        assert_raises InvalidOptions do
+          options.send(:initialize, {options: {validate: true}})
+          options.validate
+        end
       end
     end
     def test_options_validate_extra_sources_sideload
@@ -122,6 +158,17 @@ module RokuBuilder
       assert_raises InvalidOptions do
         build_options(options)
       end
+    end
+    def test_options_validate_depricated
+      options = Options.allocate
+      logger = Minitest::Mock.new()
+      logger.expect(:warn, nil, ["Depricated"])
+      Logger.class_variable_set(:@@instance, logger)
+      options.stub(:depricated_options, {validate: "Depricated"}) do
+        options.send(:initialize, {options: {validate: true}})
+        options.validate
+      end
+      logger.verify
     end
     def test_options_exclude_command
       options = build_options({

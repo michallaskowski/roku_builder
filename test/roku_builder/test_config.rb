@@ -119,6 +119,38 @@ module RokuBuilder
       File.delete(target_config) if File.exist?(target_config)
     end
 
+    def test_config_configure_edit_params_project
+      target_config = File.join(test_files_path(ConfigTest), "configure_test.json")
+      options = build_options({
+        config: target_config,
+        configure: true,
+        edit_params: "directory:/test/dir"
+      })
+      File.delete(target_config) if File.exist?(target_config)
+      refute File.exist?(target_config)
+      config = Config.new(options: options)
+      config.configure
+      assert File.exist?(target_config)
+      assert_equal "/test/dir", config.raw[:projects][config.raw[:projects][:default]][:directory]
+      File.delete(target_config) if File.exist?(target_config)
+    end
+
+    def test_config_configure_edit_params_stage
+      target_config = File.join(test_files_path(ConfigTest), "configure_test.json")
+      options = build_options({
+        config: target_config,
+        configure: true,
+        edit_params: "branch:test"
+      })
+      File.delete(target_config) if File.exist?(target_config)
+      refute File.exist?(target_config)
+      config = Config.new(options: options)
+      config.configure
+      assert File.exist?(target_config)
+      assert_equal "test", config.raw[:projects][config.raw[:projects][:default]][:stages][:production][:branch]
+      File.delete(target_config) if File.exist?(target_config)
+    end
+
     def test_config_configure_edit_params_default
       target_config = File.join(test_files_path(ConfigTest), "configure_test.json")
       options = build_options({
