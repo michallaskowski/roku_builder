@@ -48,6 +48,7 @@ module RokuBuilder
       else
         print_nodes_by_id(options[:profile])
       end
+      @connection.close if @connection
     end
 
     def sgperf(options:)
@@ -58,13 +59,13 @@ module RokuBuilder
       @connection = Net::Telnet.new(telnet_config)
       @connection.puts("sgperf clear\n")
       @connection.puts("sgperf start\n")
-      start_reg = />thread/
+      start_reg = /thread/
       end_reg = /#{SecureRandom.uuid}/
       prev_lines = 0
       begin
       while true
         lines = get_command_response(command: "sgperf report", start_reg: start_reg,
-          end_reg: end_reg, unique: true, ignore_warnings: true)
+          end_reg: end_reg, ignore_warnings: true)
         results = []
         lines.each do |line|
           match = /thread node calls: create\s*(\d*) \+ op\s*(\d*)\s*@\s*(\d*\.\d*)% rendezvous/.match(line)
@@ -74,14 +75,14 @@ module RokuBuilder
         prev_lines = 0
         results.each_index do |i|
           line = results[i]
-          if line[0] > 0 or line[1] > 0
+          if line[0] > 0 or line[1] > 0 or options[:verbose]
             prev_lines += 1
             puts "Thread #{i}: c:#{line[0]} u:#{line[1]} r:#{line[2]}%"
           end
         end
       end
       rescue SystemExit, Interrupt
-        #Exit
+        @connection.close if @connection
       end
     end
 

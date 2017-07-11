@@ -34,6 +34,7 @@ module RokuBuilder
 
       connection.expect(:puts, nil, ["sgnodes all\n"])
       connection.expect(:waitfor, nil, &waitfor)
+      connection.expect(:close, nil)
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:printf, nil) do
@@ -58,6 +59,7 @@ module RokuBuilder
 
       connection.expect(:puts, nil, ["sgnodes all\n"])
       connection.expect(:waitfor, nil, &waitfor)
+      connection.expect(:close, nil)
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:print, nil) do
@@ -82,6 +84,7 @@ module RokuBuilder
 
       connection.expect(:puts, nil, ["sgnodes roots\n"])
       connection.expect(:waitfor, nil, &waitfor)
+      connection.expect(:close, nil)
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:print, nil) do
@@ -105,6 +108,7 @@ module RokuBuilder
 
       connection.expect(:puts, nil, ["sgnodes nodeId\n"])
       connection.expect(:waitfor, nil, &waitfor)
+      connection.expect(:close, nil)
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:print, nil) do
@@ -128,6 +132,7 @@ module RokuBuilder
 
       connection.expect(:puts, nil, ["r2d2_bitmaps\n"])
       connection.expect(:waitfor, nil, &waitfor)
+      connection.expect(:close, nil)
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:print, nil) do
@@ -175,6 +180,7 @@ module RokuBuilder
       connection.expect(:puts, nil, &puts_stub)
       connection.expect(:waitfor, nil, &waitfor)
       connection.expect(:puts, nil, &puts_stub)
+      connection.expect(:close, nil)
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:print, print_stub) do
@@ -204,6 +210,7 @@ module RokuBuilder
       connection.expect(:puts, nil, ["loaded_textures\n"])
       connection.expect(:waitfor, nil, &waitfor)
       connection.expect(:waitfor, nil, &timeout)
+      connection.expect(:close, nil)
 
       Net::Telnet.stub(:new, connection) do
         profiler.stub(:print, nil) do
@@ -234,6 +241,7 @@ module RokuBuilder
       connection = Object.new
       connection.define_singleton_method(:puts){}
       connection.define_singleton_method(:waitfor){}
+      connection.define_singleton_method(:close){}
 
       message_count = {}
       puts_stub = Proc.new { |message|
@@ -278,6 +286,7 @@ module RokuBuilder
       connection = Object.new
       connection.define_singleton_method(:puts){}
       connection.define_singleton_method(:waitfor){}
+      connection.define_singleton_method(:close){}
 
       message_count = {}
       connection_puts = Proc.new { |message|
