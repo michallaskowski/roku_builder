@@ -1,3 +1,13 @@
+ = 4.2.0 =
+
+ - Added `--sgperf` command to do performance reports
+ - Added `--devlog` command to turn on enhanced logging
+ - Added memmory profiler option to monitor image memmory usage
+ - Add 'roots' profiler option
+ - Add node id option to profiler
+ - images profiler option now sorts images by file size
+ - Improve formatting of verbose output of navigator
+
  = 4.1.0 =
 
  - Remove unnecessary default manifest values
