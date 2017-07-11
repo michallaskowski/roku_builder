@@ -31,6 +31,7 @@ module RokuBuilder
     # Run the profiler commands
     # @param command [Symbol] The profiler command to run
     def profile(options:)
+      @connection = nil
       case options[:profile].to_sym
       when :stats
         print_stats
@@ -40,6 +41,8 @@ module RokuBuilder
         print_root_nodes
       when :images
         print_image_information
+      when :memmory
+        print_memmory_usage
       when :textures
         print_texture_information
       else
@@ -52,16 +55,16 @@ module RokuBuilder
         'Host' => @roku_ip_address,
         'Port' => 8080
       }
-      connection = Net::Telnet.new(telnet_config)
-      connection.puts("sgperf clear\n")
-      connection.puts("sgperf start\n")
+      @connection = Net::Telnet.new(telnet_config)
+      @connection.puts("sgperf clear\n")
+      @connection.puts("sgperf start\n")
       start_reg = />thread/
       end_reg = /#{SecureRandom.uuid}/
       prev_lines = 0
       begin
       while true
         lines = get_command_response(command: "sgperf report", start_reg: start_reg,
-          end_reg: end_reg, unique: true, connection: connection, ignore_warnings: true)
+          end_reg: end_reg, unique: true, ignore_warnings: true)
         results = []
         lines.each do |line|
           match = /thread node calls: create\s*(\d*) \+ op\s*(\d*)\s*@\s*(\d*\.\d*)% rendezvous/.match(line)
@@ -145,6 +148,20 @@ module RokuBuilder
       lines = sort_image_lines(lines)
       lines.each {|line| print line}
     end
+    def print_memmory_usage
+      start_reg = /RoGraphics instance/
+      end_reg = /Available memory/
+      begin
+      while true
+        lines = get_command_response(command: "r2d2_bitmaps", start_reg: start_reg, end_reg: end_reg, ignore_warnings: true)
+        memmory_data = get_memmory_data(lines)
+        print_memmory_data(memmory_data)
+        sleep 1
+      end
+      rescue SystemExit, Interrupt
+        #Exit
+      end
+    end
     def print_texture_information
       start_reg = /\*+/
       end_reg = /#{SecureRandom.uuid}/
@@ -154,27 +171,27 @@ module RokuBuilder
 
     # Retrive list of all nodes
     # @return [Array<String>] Array of lines
-    def get_command_response(command:, start_reg:, end_reg:, unique: false, connection: nil, ignore_warnings: false)
+    def get_command_response(command:, start_reg:, end_reg:, unique: false, ignore_warnings: false)
       waitfor_config = {
         'Match' => /.+/,
         'Timeout' => 1
       }
-      unless connection
+      unless @connection
         telnet_config ={
           'Host' => @roku_ip_address,
           'Port' => 8080
         }
-        connection = Net::Telnet.new(telnet_config)
+        @connection = Net::Telnet.new(telnet_config)
       end
 
       @lines = []
       @all_txt = ""
       @begun = false
       @done = false
-      connection.puts("#{command}\n")
+      @connection.puts("#{command}\n")
       while not @done
         begin
-          connection.waitfor(waitfor_config) do |txt|
+          @connection.waitfor(waitfor_config) do |txt|
             handle_text(txt: txt, start_reg: start_reg, end_reg: end_reg, unique: unique)
           end
         rescue Net::ReadTimeout
@@ -222,6 +239,35 @@ module RokuBuilder
         line = lines.shift
       end
       return new_lines
+    end
+
+    def get_memmory_data(lines)
+      data = {}
+      line = lines.shift
+      while line != nil
+        first_match = /RoGraphics instance (0x.*)/.match(line)
+        if first_match
+          while line != nil
+            usage_match = /Available memory (\d*) used (\d*) max (\d*)/.match(line)
+              if usage_match
+                data[first_match[1]] = [usage_match[1].to_i, usage_match[2].to_i, usage_match[3].to_i]
+                break
+              end
+            line = lines.shift
+          end
+        end
+        line = lines.shift
+      end
+      return data
+    end
+
+    def print_memmory_data(data)
+      @prev_lines ||= 0
+      print "\r" + ("\e[A\e[K"*@prev_lines)
+      data.each_key do |key|
+        print "#{key}: #{(data[key][1]*100)/data[key][2]}%\n"
+      end
+      @prev_lines = data.count
     end
   end
   RokuBuilder.register_plugin(Profiler)

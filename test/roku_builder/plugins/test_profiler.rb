@@ -119,7 +119,7 @@ module RokuBuilder
       waitfor = Proc.new do |telnet_config, &blk|
         assert_equal(/.+/, telnet_config["Match"])
         assert_equal(1, telnet_config["Timeout"])
-        txt = " RoGraphics instance\nAvailable memory\n"
+        txt = " RoGraphics instance\n0x234 1 2 3 4\nAvailable memory\n"
         blk.call(txt)
         true
       end
@@ -135,6 +135,54 @@ module RokuBuilder
         end
       end
 
+      connection.verify
+    end
+
+    def test_profiler_memmory
+      options = {profile: "memmory"}
+      config, options = build_config_options_objects(ProfilerTest, options, false)
+      waitfor = Proc.new do |telnet_config, &blk|
+        assert_equal(/.+/, telnet_config["Match"])
+        assert_equal(1, telnet_config["Timeout"])
+        txt = " RoGraphics instance 0x123\nAvailable memory 123 used 456 max 579\n"
+        blk.call(txt)
+        true
+      end
+      print_count = 0
+      print_stub = Proc.new do |message|
+        case print_count
+        when 0
+          assert_equal "\r", message
+        when 1
+          assert_equal "0x123: 78%\n", message
+        end
+        print_count +=1
+        true
+      end
+      first = true
+      puts_stub = Proc.new do |message|
+        if first
+          assert_equal "r2d2_bitmaps\n", message
+          first  = false
+        else
+          raise SystemExit
+        end
+        true
+      end
+      connection = Minitest::Mock.new
+      profiler = Profiler.new(config: config)
+
+      connection.expect(:puts, nil, &puts_stub)
+      connection.expect(:waitfor, nil, &waitfor)
+      connection.expect(:puts, nil, &puts_stub)
+
+      Net::Telnet.stub(:new, connection) do
+        profiler.stub(:print, print_stub) do
+          profiler.profile(options: options)
+        end
+      end
+
+      assert print_count > 1
       connection.verify
     end
     def test_profiler_textures
@@ -246,7 +294,7 @@ module RokuBuilder
       command_response = Proc.new { 
         if first
           first = false
-          txt = [">>thread node calls: create     0 + op    24  @ 0.0% rendezvous",
+          [">>thread node calls: create     0 + op    24  @ 0.0% rendezvous",
             "thread node calls: create     1 + op    0  @ 100.0% rendezvous",
             "thread node calls: create     0 + op    1  @ 100.0% rendezvous"]
         else
@@ -276,6 +324,7 @@ module RokuBuilder
         end
       end
 
+      assert(2 < call_count)
       assert(0 < message_count["sgperf clear\n"])
       assert(0 < message_count["sgperf start\n"])
 
