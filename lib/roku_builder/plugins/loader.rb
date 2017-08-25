@@ -102,7 +102,7 @@ module RokuBuilder
       else
         content[:folders] = @config.project[:folders]
         content[:files] = @config.project[:files]
-        content[:exclude] if @options[:exclude] or @options.exclude_command?
+        content[:excludes] = @config.project[:excludes] if @options[:exclude] or @options.exclude_command?
       end
       content
     end
