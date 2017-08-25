@@ -1,3 +1,7 @@
+ = 4.2.1 =
+
+ - Fix excludes feature
+
  = 4.2.0 =
 
  - Added `--sgperf` command to do performance reports
