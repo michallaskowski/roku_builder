@@ -22,14 +22,6 @@ module RokuBuilder
     end
 
     def print(options:)
-      attributes = [
-        :title, :build_version, :app_version, :root_dir, :app_name
-      ]
-
-      unless attributes.include? options[:print]
-        raise ExecutionError, "Unknown attribute: #{options[:print]}"
-      end
-
       manifest = Manifest.new(config: @config)
 
       case options[:print]
@@ -45,6 +37,12 @@ module RokuBuilder
         major = manifest.major_version
         minor = manifest.minor_version
         printf "%s.%s", major, minor
+      else
+        if manifest.send(options[:print])
+          printf manifest.send(options[:print])
+        else
+          raise ExecutionError, "Unknown attribute: #{options[:print]}"
+        end
       end
     end
   end

@@ -114,6 +114,7 @@ module RokuBuilder
     #  @param regexp [Regexp] regular expression to filter text on
     #  @return [String] remaining partial line text
     def manage_text(all_text:, txt:, regexp: nil)
+      raise ExecutionError, "Connection Closed" unless txt
       if /connection is already in use/ =~ txt
         raise ExecutionError, "Connection is in use"
       end

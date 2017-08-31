@@ -146,7 +146,7 @@ module RokuBuilder
       start_reg = /RoGraphics instance/
       end_reg = /Available memory/
       lines = get_command_response(command: "r2d2_bitmaps", start_reg: start_reg, end_reg: end_reg)
-      lines = sort_image_lines(lines)
+      lines = sort_image_lines(lines, /0x[^\s]+\s+\d+\s+\d+\s+\d+\s+\d+/, 4)
       lines.each {|line| print line}
     end
     def print_memmory_usage
@@ -224,14 +224,13 @@ module RokuBuilder
       end
     end
 
-    def sort_image_lines(lines)
+    def sort_image_lines(lines, reg, size_index)
       new_lines = []
       line = lines.shift
       while line != nil
-        reg = /0x[^\s]+\s+\d+\s+\d+\s+\d+\s+\d+/
         line_data = []
         while line =~ reg
-          line_data.push({line: line, size: line.split[4].to_i})
+          line_data.push({line: line, size: line.split[size_index].to_i})
           line = lines.shift
         end
         line_data.sort! {|a, b| b[:size] <=> a[:size]}
