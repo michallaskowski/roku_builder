@@ -21,12 +21,12 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = "~> 2.3"
 
   spec.add_dependency "rubyzip",             "~> 1.2"
-  spec.add_dependency "faraday",             "~> 0.12"
+  spec.add_dependency "faraday",             "~> 0.13"
   spec.add_dependency "faraday-digestauth",  "~> 0.2"
   spec.add_dependency "git",                 "~> 1.3"
   spec.add_dependency "net-ping",            "~> 2.0"
   spec.add_dependency "net-telnet",          "~> 0.1"
-  spec.add_dependency "oga",                 "~> 2.10"
+  spec.add_dependency "oga",                 "~> 2.11"
   spec.add_dependency "win32-security",      "~> 0.5" # For windows compatibility
 
   spec.add_development_dependency "bundler",           "~> 1.7"
