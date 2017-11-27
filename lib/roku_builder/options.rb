@@ -52,7 +52,8 @@ module RokuBuilder
 
     def parse
       options = {}
-      options[:config] = '~/.roku_config.json'
+      options[:local_config] = Dir.pwd + "/.build_config.json"
+      options[:global_config] = '~/.roku_config.json'
       options[:update_manifest] = false
       parser = OptionParser.new
       parser.banner = "Usage: roku <command> [options]"

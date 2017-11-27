@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    roku_builder (4.2.3)
+    roku_builder (5.0.0)
       faraday (~> 0.13)
       faraday-digestauth (~> 0.2)
       git (~> 1.3)
@@ -135,4 +135,4 @@ DEPENDENCIES
   yard (~> 0.9)
 
 BUNDLED WITH
-   1.15.1
+   1.16.0

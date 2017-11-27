@@ -62,37 +62,18 @@ module RokuBuilder
     def validate_config
       @codes = []
       validate_structure
-      [:projects, :devices, :keys, :input_mappings].each do |section|
-        validate_section(section: section) if @config[section]
-      end
+      validate_project(project: @config)
+
       @codes.uniq!
       @codes.push(VALID_CONFIG) if @codes.empty?
-    end
-
-    def validate_section(section:)
-      @config[section].each do |key, value|
-        next unless should_validate(key: key)
-        call_validate_method_for_section(section: section, content: value)
-        if has_stages(section_content: value)
-          validate_stages(project_content: value)
-        end
-      end
     end
 
     def should_validate(key:)
       !([:default, :key_dir, :project_dir].include?(key))
     end
 
-    def call_validate_method_for_section(section:, content:)
-      section_singular = singularize(section: section.to_s)
-      attrs = {}
-      attrs[section_singular] = content
-      method = "validate_#{section_singular}".to_sym
-      send(method, attrs)
-    end
-
     def singularize(section:)
-      section = section[0..-2] if section.end_with?("s")
+      section = section[0..-2] if secgition.end_with?("s")
       section.to_sym
     end
 
@@ -100,21 +81,11 @@ module RokuBuilder
       section_content.class == Hash and section_content[:stages]
     end
 
-    def validate_stages(project_content:)
-      project_content[:stages].each_value {|stage_config|
-        validate_stage(stage: stage_config, project: project_content)
-      }
-    end
-
-
     def validate_structure
       errors = [
         [MISSING_DEVICES, !@config[:devices]],
         [MISSING_DEVICES_DEFAULT, (@config[:devices] and !@config[:devices][:default])],
-        [DEVICE_DEFAULT_BAD, (@config[:devices] and @config[:devices][:default] and !@config[:devices][:default].is_a?(Symbol))],
-        [MISSING_PROJECTS_DEFAULT, (@config[:projects] and !@config[:projects][:default])],
-        [MISSING_PROJECTS_DEFAULT, (@config[:projects] and @config[:projects][:default] == "<project id>".to_sym)],
-        [PROJECTS_DEFAULT_BAD, (@config[:projects] and @config[:projects][:default] and !@config[:projects][:default].is_a?(Symbol))]
+        [DEVICE_DEFAULT_BAD, (@config[:devices] and @config[:devices][:default] and !@config[:devices][:default].is_a?(Symbol))]
       ]
       process_errors(errors: errors)
     end
@@ -137,22 +108,10 @@ module RokuBuilder
     def validate_project(project:)
       errors= [
         [PROJECT_MISSING_APP_NAME, (!project[:app_name])],
-        [PROJECT_MISSING_DIRECTORY, (!project[:directory])],
         [PROJECT_MISSING_FOLDERS, (!project[:folders])],
         [PROJECT_FOLDERS_BAD, (project[:folders] and !project[:folders].is_a?(Array))],
         [PROJECT_MISSING_FILES, (!project[:files])],
         [PROJECT_FILES_BAD, (project[:files] and !project[:files].is_a?(Array))],
-        [MISSING_STAGE_METHOD, ( !project[:stage_method])],
-        [PROJECT_STAGE_METHOD_BAD, (![:git, :script, nil].include?(project[:stage_method]))]
-      ]
-      process_errors(errors: errors)
-    end
-
-    def validate_stage(stage:, project:)
-      errors= [
-        [STAGE_MISSING_BRANCH, (!stage[:branch] and project[:stage_method] == :git)],
-        [STAGE_MISSING_SCRIPT, (!stage[:script] and project[:stage_method] == :script)],
-        [MISSING_KEY, (!!stage[:key] and stage[:key].class == String and (!@config[:keys] or !@config[:keys][stage[:key].to_sym]))]
       ]
       process_errors(errors: errors)
     end

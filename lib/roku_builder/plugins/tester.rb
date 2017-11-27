@@ -9,7 +9,7 @@ module RokuBuilder
     extend Plugin
 
     def self.commands
-      {test: {device: true, source: true, stage: true}}
+      {test: {device: true, source: false, stage: false}}
     end
 
     def self.parse_options(parser:, options:)
@@ -26,13 +26,11 @@ module RokuBuilder
     # Initialize starting and ending regular expressions
     def init()
       @end_reg = /\*+\s*End testing\s*\*+/
-      @start_reg = /\*+\s*Start testing\s*\*+/
       @test_logger = ::Logger.new(STDOUT)
       @test_logger.formatter = proc {|_severity, _datetime, _progname, msg|
         "%s\n\r" % [msg]
       }
-      @in_tests = false
-      @logs = []
+      @in_tests = true
     end
 
     # Run tests and report results
@@ -51,13 +49,12 @@ module RokuBuilder
       connection.waitfor(@end_reg) do |txt|
         handle_text(txt: txt)
       end
-      print_logs
       connection.puts("cont\n")
     end
 
     private
 
-    # Handel testing text
+    # Handle testing text
     # @param txt [String] current text from telnet
     # @param in_tests [Boolean] currently parsing test text
     # @return [Boolean] currently parsing test text
@@ -65,13 +62,12 @@ module RokuBuilder
       check_for_used_connection(txt: txt)
       txt.split("\n").each do |line|
         check_for_end(line: line)
-        @logs.push line if @in_tests
-        check_for_start(line: line)
+        @test_logger.unknown line if @in_tests
       end
     end
 
     def check_for_used_connection(txt:)
-      if txt =~ /connection already in use/
+      if txt =~ /connection is already in use/
         raise IOError, "Telnet Connection Already in Use"
       end
     end
@@ -80,28 +76,12 @@ module RokuBuilder
       if line =~ @end_reg
         @in_tests = false
         breakline = line.gsub(/./, '*')
-        @logs.push line
-        @logs.push breakline
-        @logs.push breakline
+        @test_logger.unknown line
+        @test_logger.unknown breakline
+        @test_logger.unknown breakline
       end
     end
 
-    def check_for_start(line:)
-      if line =~ @start_reg
-        @logs = []
-        @in_tests = true
-        breakline = line.gsub(/./, '*')
-        @logs.push breakline
-        @logs.push breakline
-        @logs.push line
-      end
-    end
-
-    def print_logs
-      @logs.each do |log|
-        @test_logger.unknown log
-      end
-    end
   end
   RokuBuilder.register_plugin(Tester)
 end
