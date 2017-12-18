@@ -84,19 +84,20 @@ module RokuBuilder
       @config = {parent_config: @options[:config]}
       depth = 1
       while @config[:parent_config]
-        parent_config_hash = get_parent_config
+        parent_config_hash = read_config(parent_io)
         @config[:child_config] = @config[:parent_config]
         @config.delete(:parent_config)
         @config.merge!(parent_config_hash) {|_key, v1, _v2| v1}
         depth += 1
         raise InvalidConfig, "Parent Configs Too Deep." if depth > 10
       end
+      merge_local_config
       fix_config_symbol_values
     end
 
-    def get_parent_config
+    def read_config(io)
       begin
-        JSON.parse(parent_io.read, {symbolize_names: true})
+        JSON.parse(io.read, {symbolize_names: true})
       rescue JSON::ParserError
         raise InvalidConfig, "Config file is not valid JSON"
       end
@@ -112,6 +113,14 @@ module RokuBuilder
         @config[:parent_config] = File.expand_path(@config[:parent_config], File.dirname(@config[:child_config]))
       else
         @config[:parent_config] = File.expand_path(@config[:parent_config])
+      end
+    end
+
+    def merge_local_config
+      local_config_path = "./.roku_config.json"
+      if File.exist?(local_config_path)
+        local_config_hash = read_config(File.open(local_config_path))
+        @config = @config.deep_merge(local_config_hash)
       end
     end
 

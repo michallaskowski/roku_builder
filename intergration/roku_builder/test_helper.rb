@@ -15,7 +15,7 @@ require "minitest/autorun"
 require "minitest/utils"
 require "securerandom"
 
-ROKU_IP = "192.168.1.114"
+ROKU_IP = "192.168.1.127"
 
 module Minitest
   module Assertions

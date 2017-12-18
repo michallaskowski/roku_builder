@@ -1,0 +1,20 @@
+{
+  "projects": {
+    "p2": {
+      "directory": "/tmp",
+      "folders": ["resources","source"],
+      "files": ["manifest"],
+      "app_name": "app2",
+      "stage_method": "git",
+      "stages":{
+        "production": {
+          "branch": "master",
+          "key": {
+            "keyed_pkg": "/tmp/package.pkg",
+            "password": "password"
+          }
+        }
+      }
+    }
+  }
+}
