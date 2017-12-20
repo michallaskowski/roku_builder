@@ -71,7 +71,7 @@ module RokuBuilder
     end
 
     def check_for_used_connection(txt:)
-      if txt =~ /connection already in use/
+      if txt =~ /connection (?:is\s)?already in use/
         raise IOError, "Telnet Connection Already in Use"
       end
     end
