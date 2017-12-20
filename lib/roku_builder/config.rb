@@ -45,7 +45,7 @@ module RokuBuilder
     def configure
       if @options[:configure]
         source_config = File.expand_path(File.join(File.dirname(__FILE__), "..", '..', 'config.json.example'))
-        target_config = File.expand_path(@options[:config])
+        target_config = File.expand_path(@options[:local_config])
         if File.exist?(target_config)
           unless @options[:edit_params]
             raise InvalidOptions, "Not overwriting config. Add --edit options to do so."
@@ -75,36 +75,47 @@ module RokuBuilder
     private
 
     def check_config_file
-      config_file = File.expand_path(@options[:config])
+      config_file = File.expand_path(@options[:local_config])
       raise ArgumentError, "Missing Config" unless File.exist?(config_file)
     end
 
 
     def load_config
-      @config = {parent_config: @options[:config]}
+      global_config_path = File.expand_path(@options[:global_config])
+      global_config = read_config(config_file_path: global_config_path)
+
+      @config = {parent_config: @options[:local_config]}
       depth = 1
       while @config[:parent_config]
-        parent_config_hash = get_parent_config
+        expand_parent_file_path
+        parent_config_hash = read_config(config_file_path: @config[:parent_config])
         @config[:child_config] = @config[:parent_config]
         @config.delete(:parent_config)
         @config.merge!(parent_config_hash) {|_key, v1, _v2| v1}
         depth += 1
         raise InvalidConfig, "Parent Configs Too Deep." if depth > 10
       end
+
+      if !@config[:devices]
+        @config[:devices] = global_config[:devices]
+      end
+      if !@config[:keys]
+        @config[:keys] = global_config[:keys]
+      end
+      if !@config[:input_mappings]
+        @config[:input_mappings] = global_config[:input_mappings]
+      end
+
       fix_config_symbol_values
     end
 
-    def get_parent_config
+    def read_config(config_file_path:)
+      config_file = File.open(config_file_path)
       begin
-        JSON.parse(parent_io.read, {symbolize_names: true})
+        JSON.parse(config_file.read, {symbolize_names: true})
       rescue JSON::ParserError
         raise InvalidConfig, "Config file is not valid JSON"
       end
-    end
-
-    def parent_io
-      expand_parent_file_path
-      File.open(@config[:parent_config])
     end
 
     def expand_parent_file_path

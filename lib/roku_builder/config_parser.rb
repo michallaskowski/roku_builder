@@ -22,11 +22,8 @@ module RokuBuilder
     def parse_config
       process_in_argument
       setup_device
-      setup_project
       setup_in_out_file
       setup_project_config
-      setup_stage_config
-      setup_key_config
       setup_root_dir
       setup_input_mappings
     end
@@ -41,27 +38,9 @@ module RokuBuilder
       raise ArgumentError, "Unknown device: #{@options[:device]}" unless @parsed[:device_config]
     end
 
-    def setup_project
-      if project_required and not @options[:project]
-        project = current_project
-        if project
-          @options[:project] = project
-        else
-          @options[:project] = @config[:projects][:default]
-        end
-      end
-    end
-
     def project_required
       non_project_source = ([:current, :in] & @options.keys).count > 0
       @options.has_source? and not non_project_source
-    end
-
-    def current_project
-      @config[:projects].each_pair do |key,value|
-        return key if is_current_project?(project_config: value)
-      end
-      nil
     end
 
     def is_current_project?(project_config:)
@@ -117,10 +96,8 @@ module RokuBuilder
       if @options[:current]
         stub_project_config_for_current
       elsif  project_required
-        @parsed[:project] = @config[:projects][@options[:project].to_sym]
+        @parsed[:project] = @config
         raise ParseError, "Unknown Project: #{@options[:project]}" unless @parsed[:project]
-        set_project_directory
-        check_for_working
       end
     end
 
@@ -135,20 +112,6 @@ module RokuBuilder
         stage_method: :current
       }
     end
-
-    def set_project_directory
-      if @config[:projects][:project_dir]
-        @parsed[:project][:directory] = File.join(@config[:projects][:project_dir], @parsed[:project][:directory])
-      end
-      unless Dir.exist?(@parsed[:project][:directory])
-        raise ParseError, "Missing project directory: #{@parsed[:project][:directory]}"
-      end
-    end
-
-    def check_for_working
-      @parsed[:project][:stage_method] = :working if @options[:working]
-    end
-
 
     def setup_stage_config
       if project_required
@@ -182,15 +145,9 @@ module RokuBuilder
     end
 
     def setup_root_dir
-      @parsed[:root_dir] = get_root_dir
+      @parsed[:root_dir] = Dir.pwd
     end
 
-    def get_root_dir
-      root_dir = @parsed[:project][:directory] if @parsed[:project]
-      root_dir = @options[:in] if @options[:in]
-      root_dir = Pathname.pwd.to_s if @options[:current]
-      root_dir
-    end
 
     def setup_input_mappings
       @parsed[:input_mappings] = @config[:input_mappings]
