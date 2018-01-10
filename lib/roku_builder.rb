@@ -88,6 +88,16 @@ module RokuBuilder
       file = "roku_builder/plugins/"+File.basename(path, ".rb")
       require file
     end
+    gem_versions = Gem::Specification.sort_by {|g| [g.name.downcase, g.version]}.group_by {|g| g.name}
+    gems = []
+    gem_versions.each {|v| gems.push(v.last.last)}
+    gems.each do |gem|
+      unless gem.name == "roku_builder"
+        Dir.glob(File.join(gem.full_gem_path, "lib", "roku_builder", "plugins", "*")).each do |path|
+          require path
+        end
+      end
+    end
   end
 
   def self.process_plugins
