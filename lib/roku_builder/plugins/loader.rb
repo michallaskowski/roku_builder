@@ -37,7 +37,7 @@ module RokuBuilder
 
     # Sideload an app onto a roku device
     def sideload(options:)
-      Navigator.new(config: @config).nav(options:{nav: "home"})
+      delete(options: options)
       did_build = false
       unless options[:in]
         did_build = true
