@@ -117,7 +117,7 @@ module RokuBuilder
       if @options[:current]
         stub_project_config_for_current
       elsif  project_required
-        @parsed[:project] = @config[:projects][@options[:project].to_sym]
+        @parsed[:project] = @config[:projects][@options[:project].to_sym].dup
         raise ParseError, "Unknown Project: #{@options[:project]}" unless @parsed[:project]
         set_project_directory
         check_for_working
@@ -169,7 +169,7 @@ module RokuBuilder
 
     def get_global_key_config
       raise ParseError, "Unknown Key: #{@parsed[:key]}" unless @config[:keys][@parsed[:key].to_sym]
-      @parsed[:key] = @config[:keys][@parsed[:key].to_sym]
+      @parsed[:key] = @config[:keys][@parsed[:key].to_sym].dup
       if @config[:keys][:key_dir]
         @parsed[:key][:keyed_pkg] = File.join(@config[:keys][:key_dir], @parsed[:key][:keyed_pkg])
       end
