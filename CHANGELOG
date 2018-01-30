@@ -1,3 +1,8 @@
+ = 4.5.0
+
+ - Delete sideloaded app before each sideload
+ - Allow config to be re-parsed with specific stage
+
  = 4.4.0 =
 
  - Allow External Plugins
