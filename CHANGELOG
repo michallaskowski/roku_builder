@@ -1,4 +1,8 @@
- = 4.5.0
+ = 4.5.1 =
+
+ - Fix sideloading to device without currently sideloaded app
+
+ = 4.5.0 =
 
  - Delete sideloaded app before each sideload
  - Allow config to be re-parsed with specific stage

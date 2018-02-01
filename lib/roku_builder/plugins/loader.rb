@@ -37,7 +37,7 @@ module RokuBuilder
 
     # Sideload an app onto a roku device
     def sideload(options:)
-      delete(options: options)
+      delete(options: options, ignoreFailure: true)
       did_build = false
       unless options[:in]
         did_build = true
@@ -58,10 +58,10 @@ module RokuBuilder
     end
 
     # Remove the currently sideloaded app
-    def delete(options:)
+    def delete(options:, ignoreFailure: false)
       payload =  {mysubmit: "Delete", archive: ""}
       response  = multipart_connection.post "/plugin_install", payload
-      unless response.status == 200 and response.body =~ /Delete Succeeded/
+      unless response.status == 200 and response.body =~ /Delete Succeeded/ or ignoreFailure
         raise ExecutionError, "Failed Unloading"
       end
     end
