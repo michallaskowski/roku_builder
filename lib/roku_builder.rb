@@ -98,6 +98,23 @@ module RokuBuilder
         end
       end
     end
+    load_dev_plugin
+  end
+
+  def self.load_dev_plugin
+    dev_path = nil
+    ARGV.each_index do |i|
+      if ARGV[i] == "--dev-plugin"
+        dev_path = ARGV[i+1]
+        2.times {ARGV.delete_at(i)}
+        break
+      end
+    end
+    if dev_path
+      Dir.glob(File.join(dev_path, "lib", "roku_builder", "plugins", "*")).each do |path|
+        require path
+      end
+    end
   end
 
   def self.process_plugins
