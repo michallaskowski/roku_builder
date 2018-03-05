@@ -5,6 +5,7 @@ module RokuBuilder
   class TesterTest < Minitest::Test
     def setup
       Logger.set_testing
+      RokuBuilder.class_variable_set(:@@dev, false)
       RokuBuilder.setup_plugins
       register_plugins(Tester)
       @connection = Minitest::Mock.new

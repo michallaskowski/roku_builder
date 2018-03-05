@@ -19,6 +19,7 @@ require "webmock/minitest"
 RokuBuilder::Logger.set_testing
 WebMock.disable_net_connect!
 def register_plugins(plugin_class)
+  RokuBuilder.class_variable_set(:@@dev, false)
   plugins = [plugin_class]
   plugins.each do |plugin|
     plugins.concat(plugin.dependencies)
@@ -51,6 +52,7 @@ end
 def build_options(options = {validate: true}, empty_plugins = true)
   if empty_plugins
     RokuBuilder.class_variable_set(:@@plugins, [])
+    RokuBuilder.class_variable_set(:@@dev, false)
     require "roku_builder/plugins/core"
     RokuBuilder.register_plugin(RokuBuilder::Core)
   end

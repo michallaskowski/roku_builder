@@ -6,6 +6,7 @@ module RokuBuilder
   class LoaderTest < Minitest::Test
     def setup
       Logger.set_testing
+      RokuBuilder.class_variable_set(:@@dev, false)
       RokuBuilder.setup_plugins
       register_plugins(Loader)
       @config, @options = build_config_options_objects(LoaderTest, {sideload: true, working: true}, false)

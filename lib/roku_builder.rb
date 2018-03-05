@@ -37,6 +37,7 @@ module RokuBuilder
   # @param options [Hash] The options hash
   def self.run(options: nil)
     @@options = nil
+    @@dev = false
     setup_plugins
     setup_options(options: options)
     return unless @@options
@@ -75,6 +76,7 @@ module RokuBuilder
 
   def self.register_plugin(plugin)
     @@plugins ||= []
+    @@plugins.delete(plugin) if @@dev
     @@plugins << plugin
   end
 
@@ -111,9 +113,11 @@ module RokuBuilder
       end
     end
     if dev_path
+      @@dev = true
       Dir.glob(File.join(dev_path, "lib", "roku_builder", "plugins", "*")).each do |path|
         require path
       end
+      @@dev = false
     end
   end
 

@@ -6,6 +6,7 @@ module RokuBuilder
   class ScripterTest < Minitest::Test
     def setup
       options = {print: "field", working: true}
+      RokuBuilder.class_variable_set(:@@dev, false)
       RokuBuilder.setup_plugins
       unless RokuBuilder.plugins.include?(Scripter)
         RokuBuilder.register_plugin(Scripter)
