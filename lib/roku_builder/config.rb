@@ -82,9 +82,11 @@ module RokuBuilder
 
 
     def load_config
+      @loaded_configs = []
       @config = {parent_config: @options[:config]}
       depth = 1
       while @config[:parent_config]
+        @loaded_configs.push(File.expand_path(@config[:parent_config]))
         parent_config_hash = read_config(parent_io)
         @config[:child_config] = @config[:parent_config]
         @config.delete(:parent_config)
@@ -119,7 +121,7 @@ module RokuBuilder
 
     def merge_local_config
       local_config_path = "./.roku_config.json"
-      if File.exist?(local_config_path)
+      if File.exist?(local_config_path) and !@loaded_configs.include?(File.expand_path(local_config_path))
         local_config_hash = read_config(File.open(local_config_path))
         add_missing_directories(local_config_hash)
         @config = @config.deep_merge(local_config_hash)
@@ -129,7 +131,7 @@ module RokuBuilder
     def add_missing_directories(local_config)
       if local_config[:projects]
         local_config[:projects].each_pair do |key,value|
-          unless value[:directory]
+          unless !value.is_a?(Hash) or value[:directory]
             local_config[:projects][key][:directory] = RokuBuilder.system(command: "pwd")
           end
         end

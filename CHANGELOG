@@ -1,4 +1,8 @@
- = 4.6.0
+ = 4.6.1 =
+
+ - Prevent double loading configs
+
+ = 4.6.0 =
 
  - Allow locally defined key files
  - Allow locally defined config to omit directory
