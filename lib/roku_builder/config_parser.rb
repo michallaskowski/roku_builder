@@ -170,7 +170,7 @@ module RokuBuilder
     def get_global_key_config
       raise ParseError, "Unknown Key: #{@parsed[:key]}" unless @config[:keys][@parsed[:key].to_sym]
       @parsed[:key] = @config[:keys][@parsed[:key].to_sym].dup
-      if @config[:keys][:key_dir]
+      if @config[:keys][:key_dir]  and !@parsed[:key][:keyed_pkg].start_with?("./")
         @parsed[:key][:keyed_pkg] = File.join(@config[:keys][:key_dir], @parsed[:key][:keyed_pkg])
       end
     end

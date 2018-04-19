@@ -211,6 +211,23 @@ module RokuBuilder
       tmp_file.close
     end
 
+    def test_key_config_key_local_directory
+      tmp_file = Tempfile.new("pkg")
+      FileUtils.touch("./pkg")
+      options = build_options({validate: true, project: :project2, stage: 'production'})
+      options.define_singleton_method(:source_commands){[:validate]}
+      config = good_config(ConfigParserTest)
+      config[:keys][:key_dir] = File.dirname(tmp_file.path)
+      config[:keys][:a][:keyed_pkg] = "./pkg"
+
+      configs = ConfigParser.parse(options: options, config: config)
+
+      assert_equal Hash, config.class
+      assert_equal "./pkg", configs[:key][:keyed_pkg]
+      tmp_file.close
+      FileUtils.rm("./pkg")
+    end
+
     def test_key_config_key_directory_bad
       tmp_file = Tempfile.new("pkg")
       options = build_options({validate: true, project: :project2, stage: 'production'})
