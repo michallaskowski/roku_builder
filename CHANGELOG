@@ -1,3 +1,10 @@
+ = 4.6.0
+
+ - Allow locally defined key files
+ - Allow locally defined config to omit directory
+ - Allow absolute project paths as well as a project_dir config
+ - Update Dependancies
+
  = 4.5.3 =
 
  - Allow development of installed plugin
