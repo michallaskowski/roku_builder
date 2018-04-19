@@ -73,7 +73,7 @@ module RokuBuilder
     end
 
     def get_repo_path(project_config:)
-      if @config[:projects][:project_dir]
+      if @config[:projects][:project_dir] and !Pathname.new(project_config[:directory]).absolute?
         Pathname.new(File.join(@config[:projects][:project_dir], project_config[:directory])).realdirpath
       else
         Pathname.new(project_config[:directory]).realdirpath
@@ -137,7 +137,7 @@ module RokuBuilder
     end
 
     def set_project_directory
-      if @config[:projects][:project_dir]
+      if @config[:projects][:project_dir]  and !Pathname.new(@parsed[:project][:directory]).absolute?
         @parsed[:project][:directory] = File.join(@config[:projects][:project_dir], @parsed[:project][:directory])
       end
       unless Dir.exist?(@parsed[:project][:directory])

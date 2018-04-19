@@ -196,6 +196,24 @@ module RokuBuilder
       assert_equal "/tmp/project2", configs[:project][:directory]
     end
 
+    def test_manifest_config_project_directory_select
+      options = build_options({validate: true, working: true})
+      options.define_singleton_method(:source_commands){[:validate]}
+      config = good_config(ConfigParserTest)
+      config[:projects][:project_dir] = "/tmp"
+      config[:projects][:project1][:directory] = "/tmp/project1"
+
+      configs = nil
+      Pathname.stub(:pwd, Pathname.new("/tmp/project1")) do
+        Dir.stub(:exist?, true) do
+          configs = ConfigParser.parse(options: options, config: config)
+        end
+      end
+
+      assert_equal Hash, config.class
+      assert_equal "/tmp/project1", configs[:project][:directory]
+    end
+
     def test_key_config_key_directory
       tmp_file = Tempfile.new("pkg")
       options = build_options({validate: true, project: :project2, stage: 'production'})
