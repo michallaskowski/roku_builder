@@ -121,7 +121,18 @@ module RokuBuilder
       local_config_path = "./.roku_config.json"
       if File.exist?(local_config_path)
         local_config_hash = read_config(File.open(local_config_path))
+        add_missing_directories(local_config_hash)
         @config = @config.deep_merge(local_config_hash)
+      end
+    end
+
+    def add_missing_directories(local_config)
+      if local_config[:projects]
+        local_config[:projects].each_pair do |key,value|
+          unless value[:directory]
+            local_config[:projects][key][:directory] = RokuBuilder.system(command: "pwd")
+          end
+        end
       end
     end
 

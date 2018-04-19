@@ -103,6 +103,32 @@ module RokuBuilder
       assert_equal "app2", config.raw[:projects][:p2][:app_name]
     end
 
+    def test_config_read_local_directory
+      options = build_options({config: File.join(test_files_path(ConfigTest), "config.json"), validate: true})
+      config = Config.new(options: options)
+
+      mock = Minitest::Mock.new
+      io = proc { |path|
+        if path == './.roku_config.json'
+          mock
+        else
+          IO.new(IO.sysopen(path))
+        end
+      }
+      local_config_content = IO.read(File.join(test_files_path(ConfigTest), "local.json"))
+      mock.expect(:read, local_config_content)
+
+      File.stub(:exist?, true) do
+        File.stub(:open, io) do
+          config.load
+        end
+      end
+
+      mock.verify
+      refute_nil config.raw[:projects][:p2]
+      assert_equal `pwd`.chomp, config.raw[:projects][:p2][:directory]
+    end
+
     def test_config_edit
       orginal = File.join(test_files_path(ConfigTest), "config.json")
       tmp = File.join(test_files_path(ConfigTest), "tmpconfig.json")

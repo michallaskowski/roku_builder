@@ -1,7 +1,6 @@
 {
   "projects": {
     "p2": {
-      "directory": "/tmp",
       "folders": ["resources","source"],
       "files": ["manifest"],
       "app_name": "app2",
