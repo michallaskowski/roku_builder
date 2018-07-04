@@ -201,8 +201,8 @@ module RokuBuilder
     opts = options.split(/,\s*/)
     opts.each do |opt|
       opt = opt.split(":")
-      key = opt.shift.to_sym
-      value = opt.join(":")
+      key = opt.shift.strip.to_sym
+      value = opt.join(":").strip
       parsed[key] = value
     end
     parsed

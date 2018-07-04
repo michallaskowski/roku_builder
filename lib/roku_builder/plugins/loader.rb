@@ -78,10 +78,10 @@ module RokuBuilder
         archive: Faraday::UploadIO.new(file_path(:in), 'application/zip')
       }
       response = multipart_connection.post "/plugin_install", payload
+      @logger.debug("Status: #{response.status}, Body: #{response.body}")
       if response.status==200 and response.body=~/Identical to previous version/
         @logger.warn("Sideload identival to previous version")
       elsif not (response.status==200 and response.body=~/Install Success/)
-        @logger.debug("Status: #{response.status}, Body: #{response.body}")
         raise ExecutionError, "Failed Sideloading"
       end
     end
