@@ -54,6 +54,9 @@ module RokuBuilder
     def build(options:)
       @options = options
       build_zip(setup_build_content)
+      if options.command == :build or options[:out]
+        @logger.info "File Path: "+file_path(:out)
+      end
       @config.in = @config.out #setting in path for possible sideload
     end
 
