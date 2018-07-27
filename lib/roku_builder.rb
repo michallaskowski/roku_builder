@@ -114,6 +114,9 @@ module RokuBuilder
     end
     if dev_path
       @@dev = true
+      Dir.glob(File.join(dev_path, "lib", "*.rb")).each do |path|
+        require path
+      end
       Dir.glob(File.join(dev_path, "lib", "roku_builder", "plugins", "*")).each do |path|
         require path
       end
