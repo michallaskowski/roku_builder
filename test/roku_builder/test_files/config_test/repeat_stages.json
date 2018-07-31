@@ -1,0 +1,34 @@
+{
+  "devices": {
+    "default": "roku",
+    "roku": {
+      "ip": "111.222.333.444",
+      "user": "user",
+      "password": "pass"
+    }
+  },
+  "projects": {
+    "default": "p1",
+    "p1": {
+      "directory": "/tmp",
+      "folders": ["resources","source"],
+      "files": ["manifest"],
+      "app_name": "app",
+      "stage_method": "git",
+      "stages":{
+        "!repeat": {
+          "for": ["a", "b"],
+          "stages": {
+            "{key}": {
+              "script": {"stage": "stage_script {key}", "unstage": "unstage_script"},
+              "key": "key"
+            }
+          }
+        }
+      }
+    }
+  },
+  "input_mappings": {
+    "a": ["home", "Home"]
+  }
+}

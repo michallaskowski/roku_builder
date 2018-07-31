@@ -62,6 +62,40 @@ module RokuBuilder
       assert_equal :p1, config.raw[:projects][:default]
     end
 
+    def test_config_read_repeat_stages
+      options = build_options({config: File.join(test_files_path(ConfigTest), "repeat_stages.json"), validate: true})
+      config = Config.new(options: options)
+      config.load
+      assert_equal "stage_script a", config.raw[:projects][:p1][:stages][:a][:script][:stage]
+      assert_equal "stage_script b", config.raw[:projects][:p1][:stages][:b][:script][:stage]
+      assert_equal "unstage_script", config.raw[:projects][:p1][:stages][:a][:script][:unstage]
+      assert_equal "key", config.raw[:projects][:p1][:stages][:a][:key]
+      assert_nil config.raw[:projects][:p1][:stages][:"!repeat"]
+    end
+
+    def test_config_read_repeat_multi_stages
+      options = build_options({config: File.join(test_files_path(ConfigTest), "repeat_multi_stages.json"), validate: true})
+      config = Config.new(options: options)
+      config.load
+      assert_equal "stage_script a", config.raw[:projects][:p1][:stages][:a][:script][:stage]
+      assert_equal "stage_script b", config.raw[:projects][:p1][:stages][:b][:script][:stage]
+      assert_equal "stage_script a", config.raw[:projects][:p1][:stages][:a_2][:script][:stage]
+      assert_equal "stage_script b", config.raw[:projects][:p1][:stages][:b_2][:script][:stage]
+      assert_nil config.raw[:projects][:p1][:stages][:"!repeat"]
+    end
+
+    def test_config_read_multi_repeat_stages
+      options = build_options({config: File.join(test_files_path(ConfigTest), "multi_repeat_stages.json"), validate: true})
+      config = Config.new(options: options)
+      config.load
+      assert_equal "stage_script a", config.raw[:projects][:p1][:stages][:a][:script][:stage]
+      assert_equal "stage_script b", config.raw[:projects][:p1][:stages][:b][:script][:stage]
+      assert_equal "stage_script2 c", config.raw[:projects][:p1][:stages][:c][:script][:stage]
+      assert_equal "stage_script2 d", config.raw[:projects][:p1][:stages][:d][:script][:stage]
+      assert_nil config.raw[:projects][:p1][:stages][:"!repeat_1"]
+      assert_nil config.raw[:projects][:p1][:stages][:"!repeat_2"]
+    end
+
     def test_config_read_parent_child_part
       options = build_options({config: File.join(test_files_path(ConfigTest), "child.json"), validate: true})
       config = Config.new(options: options)

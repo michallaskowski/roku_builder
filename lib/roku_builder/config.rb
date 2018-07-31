@@ -95,6 +95,7 @@ module RokuBuilder
         raise InvalidConfig, "Parent Configs Too Deep." if depth > 10
       end
       merge_local_config
+      expand_repeatable_stages
       fix_config_symbol_values
     end
 
@@ -136,6 +137,48 @@ module RokuBuilder
           end
         end
       end
+    end
+
+    def expand_repeatable_stages
+      if @config[:projects]
+        @config[:projects].each_pair do |project_key, project|
+          unless is_skippable_project_key?(project_key)
+            if project[:stages]
+              stages_to_add = {}
+              project[:stages].each_pair do |repeat, repeat_config|
+                if repeat.to_s =~ /!repeat.*/
+                  repeat_config[:for].each do |key|
+                    repeat_config[:stages].each_pair do |stage_key, stage|
+                      stage = deep_copy_replace_key(key, stage)
+                      stages_to_add[stage_key.to_s.gsub("{key}", key).to_sym] = stage
+                    end
+                  end
+                  project[:stages].delete(repeat)
+                end
+              end
+              project[:stages].merge!(stages_to_add)
+            end
+          end
+        end
+      end
+    end
+
+    def deep_copy_replace_key(key, object)
+      object = object.dup
+      if object.class == Hash
+        object.each_pair do |hash_key, hash_value|
+          object[hash_key] = deep_copy_replace_key(key, hash_value)
+        end
+      elsif object.class == Array
+        object.each_with_index do |i, value|
+          object[i] = deep_copy_replace_key(key, object[i])
+        end
+      elsif object.class == String
+        object.gsub!("{key}", key)
+      elsif object.class == Symbol
+        object = object.to_s.gsub("{key}", key).to_sym
+      end
+      object
     end
 
     def fix_config_symbol_values
