@@ -1,3 +1,18 @@
+ = 4.7.1 =
+
+ - Update Dependencies
+
+ = 4.7.0 =
+
+ - Add Repeatable stages
+
+ = 4.6.2 =
+
+ - Stripe newlines from deeplink params
+ - Add verbose print file path when leaving built zip
+ - Fix dev plugin loading
+ - Update Dependencies
+
  = 4.6.1 =
 
  - Prevent double loading configs
