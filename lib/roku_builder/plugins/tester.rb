@@ -9,7 +9,7 @@ module RokuBuilder
     extend Plugin
 
     def self.commands
-      {test: {device: true, source: true, stage: true}}
+      {test: {device: true, source: false, stage: true}}
     end
 
     def self.parse_options(parser:, options:)
