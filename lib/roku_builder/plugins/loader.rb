@@ -142,7 +142,7 @@ module RokuBuilder
           subdir =Dir.entries(diskFilePath); subdir.delete("."); subdir.delete("..")
           writeEntries(root_dir, subdir, zipFilePath, excludes, io)
         else
-          unless excludes.include?(zipFilePath)
+          unless excludes.any? { |exclude_pattern| File.fnmatch(exclude_pattern, zipFilePath) }
             if File.exist?(diskFilePath)
               io.get_output_stream(zipFilePath) { |f| f.puts(File.open(diskFilePath, "rb").read()) }
             else
