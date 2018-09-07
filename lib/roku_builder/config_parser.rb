@@ -95,7 +95,7 @@ module RokuBuilder
     def setup_project_config
       if @options[:current]
         stub_project_config_for_current
-      elsif  project_required
+      else
         @parsed[:project] = @config
         raise ParseError, "Unknown Project: #{@options[:project]}" unless @parsed[:project]
       end
