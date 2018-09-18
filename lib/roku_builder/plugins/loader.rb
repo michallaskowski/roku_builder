@@ -58,6 +58,7 @@ module RokuBuilder
         @logger.info "File Path: "+file_path(:out)
       end
       @config.in = @config.out #setting in path for possible sideload
+      file_path(:out)
     end
 
     # Remove the currently sideloaded app
@@ -67,6 +68,12 @@ module RokuBuilder
       unless response.status == 200 and response.body =~ /Delete Succeeded/ or ignoreFailure
         raise ExecutionError, "Failed Unloading"
       end
+    end
+
+    def copy(options:, path:)
+      @options = options
+      @target = path
+      copy_channel_files(setup_build_content)
     end
 
     private
@@ -154,6 +161,17 @@ module RokuBuilder
           end
         end
       }
+    end
+    def copy_channel_files(content)
+      [:files, :folders].each do |type|
+        content[type].each do |entity|
+          begin
+            FileUtils.copy_entry(File.join(@config.parsed[:root_dir], entity), File.join(@target, entity))
+          rescue Errno::ENOENT
+            @logger.warn "Missing Entry: #{entity}"
+          end
+        end
+      end
     end
   end
   RokuBuilder.register_plugin(Loader)
