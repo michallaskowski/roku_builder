@@ -34,23 +34,76 @@ module RokuBuilder
       assert options[:analyze]
     end
     def test_clean_app
-      analyzer = Analyzer.new(config: @config)
-      warnings = analyzer.analyze(options: @options)
+      warnings = test_manifest
       assert_equal Array, warnings.class
     end
     def test_manifest_duplicate_attribute
-      FileUtils.cp(File.join(@root_dir, "manifest_duplicate_attribute"), File.join(@root_dir, "manifest"))
-      analyzer = Analyzer.new(config: @config)
-      warnings = analyzer.analyze(options: @options)
+      warnings = test_manifest("manifest_duplicate_attribute")
       assert_equal 1, warnings.count
       assert_match /title/, warnings[0][:message]
     end
     def test_manifest_depricated_attribute
-      FileUtils.cp(File.join(@root_dir, "manifest_depricated_attribute"), File.join(@root_dir, "manifest"))
-      analyzer = Analyzer.new(config: @config)
-      warnings = analyzer.analyze(options: @options)
+      warnings = test_manifest("manifest_depricated_attribute")
       assert_equal 1, warnings.count
       assert_match /subtitle/, warnings[0][:message]
+    end
+    def test_manifest_empty_value
+      warnings = test_manifest("manifest_empty_value")
+      assert_equal 1, warnings.count
+      assert_match /title/, warnings[0][:message]
+    end
+    def test_manifest_invalid_value_integer
+      warnings = test_manifest("manifest_invalid_value_integer")
+      assert_equal 1, warnings.count
+      assert_match /major_version/, warnings[0][:message]
+      assert_match /bad/, warnings[0][:message]
+    end
+    def test_manifest_invalid_value_float
+      warnings = test_manifest("manifest_invalid_value_float")
+      assert_equal 1, warnings.count
+      assert_match /rsg_version/, warnings[0][:message]
+      assert_match /1/, warnings[0][:message]
+    end
+    def test_manifest_invalid_value_negative
+      warnings = test_manifest("manifest_invalid_value_negative")
+      assert_equal 1, warnings.count
+      assert_match /major_version/, warnings[0][:message]
+      assert_match /-1/, warnings[0][:message]
+    end
+    def test_manifest_invalid_value_not_equal
+      warnings = test_manifest("manifest_invalid_value_not_equal")
+      assert_equal 1, warnings.count
+      assert_match /build_version/, warnings[0][:message]
+      assert_match /0/, warnings[0][:message]
+    end
+    def test_manifest_invalid_value_equals
+      warnings = test_manifest("manifest_invalid_value_equals")
+      assert_equal 1, warnings.count
+      assert_match /screensaver_private/, warnings[0][:message]
+      assert_match /2/, warnings[0][:message]
+    end
+    def test_manifest_invalid_value_starts_with
+      warnings = test_manifest("manifest_invalid_value_starts_with")
+      assert_equal 1, warnings.count
+      assert_match /mm_icon_focus_hd/, warnings[0][:message]
+      assert_match /bad/, warnings[0][:message]
+    end
+
+
+    private
+
+    def test_manifest(manifest_file = nil)
+      if manifest_file
+        FileUtils.cp(File.join(@root_dir, manifest_file), File.join(@root_dir, "manifest"))
+      end
+      analyzer = Analyzer.new(config: @config)
+      analyzer.analyze(options: @options)
+    end
+
+    def print_all(warnings)
+      warnings.each do |warning|
+        puts warning[:message]
+      end
     end
   end
 end

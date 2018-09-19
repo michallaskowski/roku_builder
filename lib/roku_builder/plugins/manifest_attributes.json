@@ -21,7 +21,7 @@
     "validations": {
       "integer": true,
       "non_negative": true,
-      "not_equal": "0"
+      "not_equal": ["0"]
     }
   },
   "mm_icon_focus_hd": {

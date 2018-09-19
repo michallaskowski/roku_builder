@@ -54,25 +54,60 @@ module RokuBuilder
 
     def run(inspector_config)
       @warnings = []
-      attributes = {}
+      @attributes = {}
+      @inspector_config = inspector_config
       File.open(File.join(@config.root_dir, "manifest")) do |file|
         file.readlines.each do |line|
           parts = line.split("=")
           key = parts.shift.to_sym
-          if attributes[key]
-            @warnings.push(inspector_config[:manifestDuplicateAttribute].dup)
-            @warnings.last[:message].gsub!("{0}", key.to_s)
+          if @attributes[key]
+            add_warning(warning: :manifestDuplicateAttribute, key: key)
           else
-            value = parts.join("=")
-            attributes[key] = value
+            value = parts.join("=").chomp
+            if !value or value == ""
+              add_warning(warning: :manifestEmptyValue, key: key)
+            else
+              @attributes[key] = value
+            end
           end
         end
       end
       manifest_attributes.each_pair do |key, attribute_config|
-        if attributes[key]
+        if @attributes[key]
           if attribute_config[:deprecated]
-            @warnings.push(inspector_config[:manifestDeprecatedAttribute].dup)
-            @warnings.last[:message].gsub!("{0}", key.to_s)
+            add_warning(warning: :manifestDeprecatedAttribute, key: key)
+          end
+          if attribute_config[:validations]
+            attribute_config[:validations].each_pair do |type, value|
+              case type
+              when :integer
+                unless @attributes[key].to_i.to_s == @attributes[key]
+                  add_warning(warning: :manifestInvalidValue, key: key)
+                end
+              when :float
+                unless @attributes[key].to_f.to_s == @attributes[key]
+                  add_warning(warning: :manifestInvalidValue, key: key)
+                end
+              when :non_negative
+                unless @attributes[key].to_f >= 0
+                  add_warning(warning: :manifestInvalidValue, key: key)
+                end
+              when :not_equal
+                if value.include? @attributes[key]
+                  add_warning(warning: :manifestInvalidValue, key: key)
+                end
+              when :equals
+                unless value.include? @attributes[key]
+                  add_warning(warning: :manifestInvalidValue, key: key)
+                end
+              when :starts_with
+                unless @attributes[key].start_with? value
+                  add_warning(warning: :manifestInvalidValue, key: key)
+                end
+              else
+                raise ImplementationError, "Unknown Validation"
+              end
+            end
           end
         end
       end
@@ -85,6 +120,13 @@ module RokuBuilder
     def manifest_attributes
       file = File.join(File.dirname(__FILE__), "manifest_attributes.json")
       JSON.parse(File.open(file).read, {symbolize_names: true})
+    end
+    def add_warning(warning:, key:)
+      @warnings.push(@inspector_config[warning].dup)
+      @warnings.last[:message].gsub!("{0}", key.to_s)
+      if @attributes[key]
+        @warnings.last[:message].gsub!("{1}", @attributes[key])
+      end
     end
   end
 end
