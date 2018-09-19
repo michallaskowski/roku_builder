@@ -22,6 +22,10 @@ module RokuBuilder
       write_file
     end
 
+    def get_attributes
+      @attributes
+    end
+
     def increment_build_version
       build_version_parts = @attributes[:build_version].split(".")
       if build_version_parts.length == 2
