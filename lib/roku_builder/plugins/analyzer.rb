@@ -109,6 +109,36 @@ module RokuBuilder
               end
             end
           end
+          if attribute_config[:notify]
+            attribute_config[:notify].each do |regexp|
+              if /#{regexp}/ =~ @attributes[key]
+                add_warning(warning: :manifestHasValue, key: key)
+                break
+              end
+            end
+          end
+          if attribute_config[:isResource]
+            path = File.join(@dir, @attributes[key].gsub("pkg:/", ""))
+            unless File.exist?(path)
+              mapping = {"{0}": @attributes[key], "{1}": key }
+              add_warning(warning: :manifestMissingFile, key: key, mapping: mapping)
+            else if attribute_config[:resolution]
+                size = ImageSize.path(path).size
+                target = ImageSize::Size.new(attribute_config[:resolution])
+                unless size == target
+                  mapping = {
+                    "{0}": @attributes[key],
+                    "{1}": key,
+                    "{2}": size,
+                    "{3}": target
+                  }
+                  add_warning(warning: :manifestIncorrectImageResolution, key: key, mapping: mapping)
+                end
+              end
+            end
+          end
+        elsif attribute_config[:required]
+          add_warning(warning: :manifestMissingAttribute, key: key)
         end
       end
 
@@ -121,11 +151,17 @@ module RokuBuilder
       file = File.join(File.dirname(__FILE__), "manifest_attributes.json")
       JSON.parse(File.open(file).read, {symbolize_names: true})
     end
-    def add_warning(warning:, key:)
-      @warnings.push(@inspector_config[warning].dup)
-      @warnings.last[:message].gsub!("{0}", key.to_s)
-      if @attributes[key]
-        @warnings.last[:message].gsub!("{1}", @attributes[key])
+    def add_warning(warning:, key:, mapping: nil)
+      @warnings.push(@inspector_config[warning].deep_dup)
+      if mapping
+        mapping.each_pair do |map, value|
+          @warnings.last[:message].gsub!(map.to_s, value.to_s)
+        end
+      else
+        @warnings.last[:message].gsub!("{0}", key.to_s)
+        if @attributes[key]
+          @warnings.last[:message].gsub!("{1}", @attributes[key])
+        end
       end
     end
   end

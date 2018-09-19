@@ -40,53 +40,79 @@ module RokuBuilder
     def test_manifest_duplicate_attribute
       warnings = test_manifest("manifest_duplicate_attribute")
       assert_equal 1, warnings.count
-      assert_match /title/, warnings[0][:message]
+      assert_match(/title/, warnings[0][:message])
     end
     def test_manifest_depricated_attribute
       warnings = test_manifest("manifest_depricated_attribute")
       assert_equal 1, warnings.count
-      assert_match /subtitle/, warnings[0][:message]
+      assert_match(/subtitle/, warnings[0][:message])
     end
     def test_manifest_empty_value
       warnings = test_manifest("manifest_empty_value")
       assert_equal 1, warnings.count
-      assert_match /title/, warnings[0][:message]
+      assert_match(/empty/, warnings[0][:message])
     end
     def test_manifest_invalid_value_integer
       warnings = test_manifest("manifest_invalid_value_integer")
       assert_equal 1, warnings.count
-      assert_match /major_version/, warnings[0][:message]
-      assert_match /bad/, warnings[0][:message]
+      assert_match(/major_version/, warnings[0][:message])
+      assert_match(/bad/, warnings[0][:message])
     end
     def test_manifest_invalid_value_float
       warnings = test_manifest("manifest_invalid_value_float")
       assert_equal 1, warnings.count
-      assert_match /rsg_version/, warnings[0][:message]
-      assert_match /1/, warnings[0][:message]
+      assert_match(/rsg_version/, warnings[0][:message])
+      assert_match(/1/, warnings[0][:message])
     end
     def test_manifest_invalid_value_negative
       warnings = test_manifest("manifest_invalid_value_negative")
       assert_equal 1, warnings.count
-      assert_match /major_version/, warnings[0][:message]
-      assert_match /-1/, warnings[0][:message]
+      assert_match(/major_version/, warnings[0][:message])
+      assert_match(/-1/, warnings[0][:message])
     end
     def test_manifest_invalid_value_not_equal
       warnings = test_manifest("manifest_invalid_value_not_equal")
       assert_equal 1, warnings.count
-      assert_match /build_version/, warnings[0][:message]
-      assert_match /0/, warnings[0][:message]
+      assert_match(/build_version/, warnings[0][:message])
+      assert_match(/0/, warnings[0][:message])
     end
     def test_manifest_invalid_value_equals
       warnings = test_manifest("manifest_invalid_value_equals")
       assert_equal 1, warnings.count
-      assert_match /screensaver_private/, warnings[0][:message]
-      assert_match /2/, warnings[0][:message]
+      assert_match(/screensaver_private/, warnings[0][:message])
+      assert_match(/2/, warnings[0][:message])
     end
     def test_manifest_invalid_value_starts_with
       warnings = test_manifest("manifest_invalid_value_starts_with")
+      refute_equal 0, warnings.count
+      assert_match(/mm_icon_focus_hd/, warnings[0][:message])
+      assert_match(/bad/, warnings[0][:message])
+      assert_match(/invalid value/, warnings[0][:message])
+    end
+    def test_manifest_has_value
+      warnings = test_manifest("manifest_has_value")
       assert_equal 1, warnings.count
-      assert_match /mm_icon_focus_hd/, warnings[0][:message]
-      assert_match /bad/, warnings[0][:message]
+      assert_match(/rsg_version/, warnings[0][:message])
+      assert_match(/1.0/, warnings[0][:message])
+    end
+    def test_manifest_missing_file
+      warnings = test_manifest("manifest_missing_file")
+      assert_equal 1, warnings.count
+      assert_match(/mm_icon_focus_hd/, warnings[0][:message])
+      assert_match(/missing.png/, warnings[0][:message])
+    end
+    def test_manifest_missing_attribute
+      warnings = test_manifest("manifest_missing_attribute")
+      assert_equal 1, warnings.count
+      assert_match(/title/, warnings[0][:message])
+    end
+    def test_manifest_incorrect_image_resolution
+      warnings = test_manifest("manifest_incorrect_image_resolution")
+      assert_equal 1, warnings.count
+      assert_match(/mm_icon_focus_hd/, warnings[0][:message])
+      assert_match(/too_small.png/, warnings[0][:message])
+      assert_match(/336x210/, warnings[0][:message])
+      assert_match(/1x1/, warnings[0][:message])
     end
 
 

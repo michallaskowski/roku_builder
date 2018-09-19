@@ -29,34 +29,39 @@
     "validations": {
       "starts_with": "pkg:/"
     },
-    "isResource": true
+    "isResource": true,
+    "resolution": [336, 210]
   },
   "mm_icon_focus_sd": {
     "required": true,
     "validations": {
       "starts_with": "pkg:/"
     },
-    "isResource": true
+    "isResource": true,
+    "resolution": [246, 140]
   },
   "splash_screen_fhd": {
     "validations": {
       "starts_with": "pkg:/"
     },
-    "isResource": true
+    "isResource": true,
+    "resolution": [1920, 1080]
   },
   "splash_screen_hd": {
     "required": true,
     "validations": {
       "starts_with": "pkg:/"
     },
-    "isResource": true
+    "isResource": true,
+    "resolution": [1280, 720]
   },
   "splash_screen_sd": {
     "required": true,
     "validations": {
       "starts_with": "pkg:/"
     },
-    "isResource": true
+    "isResource": true,
+    "resolution": [720, 480]
   },
   "splash_color": {
     "validations": {
@@ -160,7 +165,8 @@
     "validations": {
       "float": true,
       "non_negative": true
-    }
+    },
+    "notify": ["1.0"]
   },
   "automatic_audio_guide_disabled": {
     "validations": {
