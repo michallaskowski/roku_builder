@@ -55,19 +55,23 @@ module RokuBuilder
     def run(inspector_config)
       @warnings = []
       @attributes = {}
+      @line_numbers = {}
       @inspector_config = inspector_config
       File.open(File.join(@config.root_dir, "manifest")) do |file|
+        current_line = 0
         file.readlines.each do |line|
+          current_line += 1
           parts = line.split("=")
           key = parts.shift.to_sym
           if @attributes[key]
-            add_warning(warning: :manifestDuplicateAttribute, key: key)
+            add_warning(warning: :manifestDuplicateAttribute, key: key, line: current_line)
           else
             value = parts.join("=").chomp
             if !value or value == ""
-              add_warning(warning: :manifestEmptyValue, key: key)
+              add_warning(warning: :manifestEmptyValue, key: key, line: current_line)
             else
               @attributes[key] = value
+              @line_numbers[key] = current_line
             end
           end
         end
@@ -151,8 +155,14 @@ module RokuBuilder
       file = File.join(File.dirname(__FILE__), "manifest_attributes.json")
       JSON.parse(File.open(file).read, {symbolize_names: true})
     end
-    def add_warning(warning:, key:, mapping: nil)
+    def add_warning(warning:, key:, mapping: nil, line: nil)
       @warnings.push(@inspector_config[warning].deep_dup)
+      @warnings.last[:path] = "manifest"
+      if line
+        @warnings.last[:line] = line
+      elsif @line_numbers[key]
+        @warnings.last[:line] = @line_numbers[key]
+      end
       if mapping
         mapping.each_pair do |map, value|
           @warnings.last[:message].gsub!(map.to_s, value.to_s)
