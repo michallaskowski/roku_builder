@@ -140,6 +140,63 @@ module RokuBuilder
       assert_equal 5, warnings[0][:line]
       assert_equal "manifest", warnings[0][:path]
     end
+    def test_line_inspector_depricated_component
+      warnings = test_file(text: "\"roVideoScreen\"")
+      assert_equal 1, warnings.count
+      assert_match(/deprecated/, warnings[0][:message])
+      assert_match(/roVideoScreen/, warnings[0][:message])
+    end
+    def test_line_inspector_depricated_component_xml_file
+      warnings = test_file(text: "\"roVideoScreen\"", file: "test.xml")
+      assert_equal 1, warnings.count
+      assert_match(/roVideoScreen/, warnings[0][:message])
+    end
+    def test_line_inspector_depricated_component_in_comment
+      warnings = test_file(text: "'\"roVideoScreen\"")
+      assert_equal 0, warnings.count
+    end
+    def test_line_inspector_depricated_component_before_comment
+      warnings = test_file(text: "\"roVideoScreen\"'comment")
+      assert_equal 1, warnings.count
+      assert_match(/roVideoScreen/, warnings[0][:message])
+    end
+    def test_line_inspector_depricated_component_in_xml_comment
+      warnings = test_file(text: "<!-- \"roVideoScreen\" -->", file: "test.xml")
+      assert_equal 0, warnings.count
+    end
+    def test_line_inspector_depricated_component_before_xml_comment
+      warnings = test_file(text: "\"roVideoScreen\" <!-- comment -->", file: "test.xml")
+      assert_equal 1, warnings.count
+    end
+    def test_line_inspector_depricated_component_after_xml_comment
+      warnings = test_file(text: "<!-- comment -->\"roVideoScreen\"", file: "test.xml")
+      assert_equal 1, warnings.count
+    end
+    def test_line_inspector_depricated_component_in_xml_multiline_comment
+      warnings = test_file(text: "<!-- line1 \n\"roVideoScreen\"\n line3 -->", file: "test.xml")
+      assert_equal 0, warnings.count
+    end
+    def test_line_inspector_depricated_component_in_xml_multiline_comment_start
+      warnings = test_file(text: "<!-- \"roVideoScreen\"\n line2 -->", file: "test.xml")
+      assert_equal 0, warnings.count
+    end
+    def test_line_inspector_depricated_component_in_xml_multiline_comment
+      warnings = test_file(text: "<!-- line1 \n\"roVideoScreen\"-->", file: "test.xml")
+      assert_equal 0, warnings.count
+    end
+    def test_line_inspector_depricated_component_before_xml_multiline_comment
+      warnings = test_file(text: "\"roVideoScreen\"<!-- line1 \n line2 -->", file: "test.xml")
+      assert_equal 1, warnings.count
+    end
+    def test_line_inspector_depricated_component_after_xml_multiline_comment
+      warnings = test_file(text: "<!-- line1 \n line2 -->\"roVideoScreen\"", file: "test.xml")
+      assert_equal 1, warnings.count
+    end
+    def test_line_inspector_stop_command
+      warnings = test_file(text: "test\nstop\n")
+      assert_equal 1, warnings.count
+      assert_equal 1, warnings[0][:line]
+    end
 
 
     private
@@ -150,6 +207,18 @@ module RokuBuilder
       end
       analyzer = Analyzer.new(config: @config)
       analyzer.analyze(options: @options)
+    end
+
+    def test_file(text:, file: nil)
+      file ||= "test.brs"
+      test_file = File.join(@root_dir, "source", file)
+      File.open(test_file, "w") do |file|
+        file.write(text)
+      end
+      analyzer = Analyzer.new(config: @config)
+      warnings = analyzer.analyze(options: @options)
+      FileUtils.rm(test_file) if File.exist?(test_file)
+      warnings
     end
 
     def print_all(warnings)

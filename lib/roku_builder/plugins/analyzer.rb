@@ -32,6 +32,8 @@ module RokuBuilder
         loader.copy(options: options, path: dir)
         inspector = ManifestInspector.new(config: @config, dir: dir)
         warnings.concat(inspector.run(analyzer_config[:inspectors]))
+        inspector = LineInspector.new(config: @config, dir: dir)
+        warnings.concat(inspector.run(analyzer_config[:lineInspectors]))
       end
       warnings
     end
@@ -39,12 +41,63 @@ module RokuBuilder
     private
 
     def get_analyzer_config
-      url = "http://devtools.web.roku.com/static-code-analyzer/config.json"
-      url = @options[:analyze_config] if @options[:analyze_config]
-      JSON.parse(Faraday.get(url).body, {symbolize_names: true})
+      #url = "http://devtools.web.roku.com/static-code-analyzer/config.json"
+      #url = @options[:analyze_config] if @options[:analyze_config]
+      #JSON.parse(Faraday.get(url).body, {symbolize_names: true})
+      file = File.join(File.dirname(__FILE__), "inspector_config.json")
+      JSON.parse(File.open(file).read, {symbolize_names: true})
     end
   end
   RokuBuilder.register_plugin(Analyzer)
+
+
+  class LineInspector
+    def initialize(config:, dir:)
+      @config = config
+      @dir = dir
+    end
+
+    def run(inspector_config)
+      @warnings = []
+      Dir.glob(File.join(@dir, "**", "*")).each do |file_path|
+        if File.file?(file_path) and file_path.end_with?(".brs", ".xml")
+          File.open(file_path) do |file|
+            line_number = 0
+            in_xml_comment = false
+            file.readlines.each do |line|
+              line = line.partition("'").first if file_path.end_with?(".brs")
+              if file_path.end_with?(".xml")
+                if in_xml_comment
+                  if line.gsub!(/.*-->/, "")
+                    in_xml_comment = false
+                  else
+                    line = ""
+                  end
+                end
+                line.gsub!(/<!--.*-->/, "")
+                in_xml_comment = true if line.gsub!(/<!--.*/, "")
+              end
+              inspector_config.each do |line_inspector|
+                if /#{line_inspector[:regex]}/.match(line)
+                  add_warning(inspector: line_inspector, file: file_path, line: line_number)
+                end
+              end
+              line_number += 1
+            end
+          end
+        end
+      end
+      @warnings
+    end
+
+    private
+
+    def add_warning(inspector:,  file:, line:)
+      @warnings.push(inspector.deep_dup)
+      @warnings.last[:path] = file
+      @warnings.last[:line] = line
+    end
+  end
 
   class ManifestInspector
     def initialize(config:, dir:)
