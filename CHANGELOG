@@ -1,3 +1,11 @@
+ = 4.8.0 =
+
+ - Add Static Analyzer
+
+ = 4.7.2 =
+
+ - Fix monitor regexp
+
  = 4.7.1 =
 
  - Update Dependencies
