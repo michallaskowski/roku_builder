@@ -25,19 +25,35 @@ module RokuBuilder
 
     def analyze(options:)
       @options = options
-      warnings = []
+      @warnings = []
       analyzer_config = get_analyzer_config
+      @inspector_config = analyzer_config[:inspectors]
       loader = Loader.new(config: @config)
       Dir.mktmpdir do |dir|
         loader.copy(options: options, path: dir)
         raf_inspector = RafInspector.new(config: @config, dir: dir)
         manifest_inspector = ManifestInspector.new(config: @config, dir: dir, raf: raf_inspector)
-        warnings.concat(manifest_inspector.run(analyzer_config[:inspectors]))
-        line_inspector = LineInspector.new(config: @config, dir: dir, raf: raf_inspector)
-        warnings.concat(line_inspector.run(analyzer_config[:lineInspectors]))
-        warnings.concat(raf_inspector.run(analyzer_config[:inspectors]))
+        @warnings.concat(manifest_inspector.run(analyzer_config[:inspectors]))
+        has_source_dir = false
+        Dir.glob(File.join(dir, "**", "*")).each do |file_path|
+          if File.file?(file_path) and file_path.end_with?(".brs", ".xml")
+            line_inspector = LineInspector.new(config: @config, raf: raf_inspector, inspector_config: analyzer_config[:lineInspectors])
+            @warnings.concat(line_inspector.run(file_path))
+          end
+          if file_path.end_with?("__MACOSX")
+            add_warning(warning: :packageMacosxDirectory, path: file_path, dir: dir)
+          end
+          if file_path.end_with?(".zip", ".md", ".pkg")
+            add_warning(warning: :packageExtraneousFiles, path: file_path, dir: dir)
+          end
+          has_source_dir  = true if file_path.end_with?("source")
+        end
+        unless has_source_dir
+          add_warning(warning: :packageSourceDirectory, path: "source")
+        end
+        @warnings.concat(raf_inspector.run(analyzer_config[:inspectors]))
       end
-      warnings
+      @warnings
     end
 
     private
@@ -49,46 +65,49 @@ module RokuBuilder
       file = File.join(File.dirname(__FILE__), "inspector_config.json")
       JSON.parse(File.open(file).read, {symbolize_names: true})
     end
+
+    def add_warning(warning:, path:, dir: nil)
+      @warnings.push(@inspector_config[warning].deep_dup)
+      path = path.dup
+      path.slice!(dir) if dir
+      @warnings.last[:path] = path
+    end
   end
   RokuBuilder.register_plugin(Analyzer)
 
 
   class LineInspector
-    def initialize(config:, dir:, raf:)
+    def initialize(config:, raf:, inspector_config:)
       @config = config
-      @dir = dir
       @raf_inspector = raf
+      @inspector_config = inspector_config
     end
 
-    def run(inspector_config)
+    def run(file_path)
       @warnings = []
-      Dir.glob(File.join(@dir, "**", "*")).each do |file_path|
-        if File.file?(file_path) and file_path.end_with?(".brs", ".xml")
-          File.open(file_path) do |file|
-            line_number = 0
-            in_xml_comment = false
-            file.readlines.each do |line|
-              line = line.partition("'").first if file_path.end_with?(".brs")
-              if file_path.end_with?(".xml")
-                if in_xml_comment
-                  if line.gsub!(/.*-->/, "")
-                    in_xml_comment = false
-                  else
-                    line = ""
-                  end
-                end
-                line.gsub!(/<!--.*-->/, "")
-                in_xml_comment = true if line.gsub!(/<!--.*/, "")
+      File.open(file_path) do |file|
+        line_number = 0
+        in_xml_comment = false
+        file.readlines.each do |line|
+          line = line.partition("'").first if file_path.end_with?(".brs")
+          if file_path.end_with?(".xml")
+            if in_xml_comment
+              if line.gsub!(/.*-->/, "")
+                in_xml_comment = false
+              else
+                line = ""
               end
-              inspector_config.each do |line_inspector|
-                if /#{line_inspector[:regex]}/.match(line)
-                  add_warning(inspector: line_inspector, file: file_path, line: line_number)
-                end
-              end
-              @raf_inspector.inspect_line(line: line, file: file_path, line_number: line_number)
-              line_number += 1
+            end
+            line.gsub!(/<!--.*-->/, "")
+            in_xml_comment = true if line.gsub!(/<!--.*/, "")
+          end
+          @inspector_config.each do |line_inspector|
+            if /#{line_inspector[:regex]}/.match(line)
+              add_warning(inspector: line_inspector, file: file_path, line: line_number)
             end
           end
+          @raf_inspector.inspect_line(line: line, file: file_path, line_number: line_number)
+          line_number += 1
         end
       end
       @warnings
@@ -115,95 +134,100 @@ module RokuBuilder
       @attributes = {}
       @line_numbers = {}
       @inspector_config = inspector_config
-      File.open(File.join(@config.root_dir, "manifest")) do |file|
-        current_line = 0
-        file.readlines.each do |line|
-          current_line += 1
-          parts = line.split("=")
-          key = parts.shift.to_sym
-          if @attributes[key]
-            add_warning(warning: :manifestDuplicateAttribute, key: key, line: current_line)
-          else
-            value = parts.join("=").chomp
-            if !value or value == ""
-              add_warning(warning: :manifestEmptyValue, key: key, line: current_line)
+      manifest = File.join(@config.root_dir, "manifest")
+      unless File.exist?(manifest)
+        add_warning(warning: :packageManifestFile)
+      else
+        File.open(manifest) do |file|
+          current_line = 0
+          file.readlines.each do |line|
+            current_line += 1
+            parts = line.split("=")
+            key = parts.shift.to_sym
+            if @attributes[key]
+              add_warning(warning: :manifestDuplicateAttribute, key: key, line: current_line)
             else
-              @attributes[key] = value
-              @line_numbers[key] = current_line
-            end
-          end
-        end
-      end
-      manifest_attributes.each_pair do |key, attribute_config|
-        if @attributes[key]
-          if attribute_config[:deprecated]
-            add_warning(warning: :manifestDeprecatedAttribute, key: key)
-          end
-          if attribute_config[:validations]
-            attribute_config[:validations].each_pair do |type, value|
-              case type
-              when :integer
-                unless @attributes[key].to_i.to_s == @attributes[key]
-                  add_warning(warning: :manifestInvalidValue, key: key)
-                end
-              when :float
-                unless @attributes[key].to_f.to_s == @attributes[key]
-                  add_warning(warning: :manifestInvalidValue, key: key)
-                end
-              when :non_negative
-                unless @attributes[key].to_f >= 0
-                  add_warning(warning: :manifestInvalidValue, key: key)
-                end
-              when :not_equal
-                if value.include? @attributes[key]
-                  add_warning(warning: :manifestInvalidValue, key: key)
-                end
-              when :equals
-                unless value.include? @attributes[key]
-                  add_warning(warning: :manifestInvalidValue, key: key)
-                end
-              when :starts_with
-                unless @attributes[key].start_with? value
-                  add_warning(warning: :manifestInvalidValue, key: key)
-                end
+              value = parts.join("=").chomp
+              if !value or value == ""
+                add_warning(warning: :manifestEmptyValue, key: key, line: current_line)
               else
-                raise ImplementationError, "Unknown Validation"
+                @attributes[key] = value
+                @line_numbers[key] = current_line
               end
             end
           end
-          if attribute_config[:notify]
-            attribute_config[:notify].each do |regexp|
-              if /#{regexp}/ =~ @attributes[key]
-                add_warning(warning: :manifestHasValue, key: key)
-                break
-              end
+        end
+        manifest_attributes.each_pair do |key, attribute_config|
+          if @attributes[key]
+            if attribute_config[:deprecated]
+              add_warning(warning: :manifestDeprecatedAttribute, key: key)
             end
-          end
-          if attribute_config[:isResource]
-            path = File.join(@dir, @attributes[key].gsub("pkg:/", ""))
-            unless File.exist?(path)
-              mapping = {"{0}": @attributes[key], "{1}": key }
-              add_warning(warning: :manifestMissingFile, key: key, mapping: mapping)
-            else
-              if attribute_config[:resolution]
-                size = ImageSize.path(path).size
-                target = ImageSize::Size.new(attribute_config[:resolution])
-                unless size == target
-                  mapping = {
-                    "{0}": @attributes[key],
-                    "{1}": key,
-                    "{2}": size,
-                    "{3}": target
-                  }
-                  add_warning(warning: :manifestIncorrectImageResolution, key: key, mapping: mapping)
+            if attribute_config[:validations]
+              attribute_config[:validations].each_pair do |type, value|
+                case type
+                when :integer
+                  unless @attributes[key].to_i.to_s == @attributes[key]
+                    add_warning(warning: :manifestInvalidValue, key: key)
+                  end
+                when :float
+                  unless @attributes[key].to_f.to_s == @attributes[key]
+                    add_warning(warning: :manifestInvalidValue, key: key)
+                  end
+                when :non_negative
+                  unless @attributes[key].to_f >= 0
+                    add_warning(warning: :manifestInvalidValue, key: key)
+                  end
+                when :not_equal
+                  if value.include? @attributes[key]
+                    add_warning(warning: :manifestInvalidValue, key: key)
+                  end
+                when :equals
+                  unless value.include? @attributes[key]
+                    add_warning(warning: :manifestInvalidValue, key: key)
+                  end
+                when :starts_with
+                  unless @attributes[key].start_with? value
+                    add_warning(warning: :manifestInvalidValue, key: key)
+                  end
+                else
+                  raise ImplementationError, "Unknown Validation"
                 end
               end
             end
+            if attribute_config[:notify]
+              attribute_config[:notify].each do |regexp|
+                if /#{regexp}/ =~ @attributes[key]
+                  add_warning(warning: :manifestHasValue, key: key)
+                  break
+                end
+              end
+            end
+            if attribute_config[:isResource]
+              path = File.join(@dir, @attributes[key].gsub("pkg:/", ""))
+              unless File.exist?(path)
+                mapping = {"{0}": @attributes[key], "{1}": key }
+                add_warning(warning: :manifestMissingFile, key: key, mapping: mapping)
+              else
+                if attribute_config[:resolution]
+                  size = ImageSize.path(path).size
+                  target = ImageSize::Size.new(attribute_config[:resolution])
+                  unless size == target
+                    mapping = {
+                      "{0}": @attributes[key],
+                      "{1}": key,
+                      "{2}": size,
+                      "{3}": target
+                    }
+                    add_warning(warning: :manifestIncorrectImageResolution, key: key, mapping: mapping)
+                  end
+                end
+              end
+            end
+          elsif attribute_config[:required]
+            add_warning(warning: :manifestMissingAttribute, key: key)
           end
-        elsif attribute_config[:required]
-          add_warning(warning: :manifestMissingAttribute, key: key)
+          @raf_inspector.inspect_manifest(attributes: @attributes, line_numbers: @line_numbers)
         end
-        @raf_inspector.inspect_manifest(attributes: @attributes, line_numbers: @line_numbers)
       end
       @warnings
     end
@@ -214,7 +238,8 @@ module RokuBuilder
       file = File.join(File.dirname(__FILE__), "manifest_attributes.json")
       JSON.parse(File.open(file).read, {symbolize_names: true})
     end
-    def add_warning(warning:, key:, mapping: nil, line: nil)
+
+    def add_warning(warning:, key: nil, mapping: nil, line: nil)
       @warnings.push(@inspector_config[warning].deep_dup)
       @warnings.last[:path] = "manifest"
       if line
@@ -226,7 +251,7 @@ module RokuBuilder
         mapping.each_pair do |map, value|
           @warnings.last[:message].gsub!(map.to_s, value.to_s)
         end
-      else
+      elsif key
         @warnings.last[:message].gsub!("{0}", key.to_s)
         if @attributes[key]
           @warnings.last[:message].gsub!("{1}", @attributes[key])

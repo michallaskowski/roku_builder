@@ -20,9 +20,12 @@ module RokuBuilder
       end
       @request_stubs.push(stub_request(:get, "http://devtools.web.roku.com/static-code-analyzer/config.json").
         to_return(status: 200, body: analyzer_config, headers: {}))
+      folder = File.join(@root_dir, "source")
+      Dir.mkdir(folder) unless File.exist?(folder)
     end
     def teardown
-      FileUtils.rm(File.join(@root_dir, "manifest"))
+      manifest = File.join(@root_dir, "manifest")
+      FileUtils.rm(manifest) if File.exist?(manifest)
       @request_stubs.each {|req| remove_request_stub(req)}
     end
     def test_analyzer_parse_commands
@@ -34,7 +37,7 @@ module RokuBuilder
       assert options[:analyze]
     end
     def test_clean_app
-      warnings = test_manifest
+      warnings = test
       assert_equal Array, warnings.class
     end
     def test_manifest_duplicate_attribute
@@ -232,6 +235,45 @@ module RokuBuilder
       assert_equal 1, warnings.count
       assert_match(/integrated properly/, warnings[0][:message])
     end
+    def test_macosx_directory
+      config = good_config(AnalyzerTest)
+      config[:projects][:project1][:folders].push("Test__MACOSX")
+      @config, @options = build_config_options_objects(AnalyzerTest, {analyze: true, working: true, quiet_analyze: true}, false, config)
+      folder = File.join(@root_dir, "Test__MACOSX")
+      Dir.mkdir(folder) unless File.exist?(folder)
+      warnings = test
+      assert_equal 1, warnings.count
+      assert_match(/MACOSX directory/, warnings[0][:message])
+      Dir.rmdir(folder) if File.exist?(folder)
+    end
+    def test_extranious_files_zip
+      warnings = test_file(text: "nothing", file: "test.zip")
+      assert_equal 1, warnings.count
+      assert_match(/extraneous file/, warnings[0][:message])
+    end
+    def test_extranious_files_md
+      warnings = test_file(text: "nothing", file: "test.md")
+      assert_equal 1, warnings.count
+      assert_match(/extraneous file/, warnings[0][:message])
+    end
+    def test_extranious_files_pkg
+      warnings = test_file(text: "nothing", file: "test.pkg")
+      assert_equal 1, warnings.count
+      assert_match(/extraneous file/, warnings[0][:message])
+    end
+    def test_source_directory
+      folder = File.join(@root_dir, "source")
+      Dir.rmdir(folder) if File.exist?(folder)
+      warnings = test
+      assert_equal 1, warnings.count
+      assert_match(/"source".*not exist/, warnings[0][:message])
+    end
+    def test_manifest_file
+      FileUtils.rm(File.join(@root_dir, "manifest"))
+      warnings = test
+      assert_equal 1, warnings.count
+      assert_match(/Manifest.*missing/, warnings[0][:message])
+    end
 
 
     private
@@ -240,8 +282,7 @@ module RokuBuilder
       if manifest_file
         use_manifest(manifest_file)
       end
-      analyzer = Analyzer.new(config: @config)
-      analyzer.analyze(options: @options)
+      test
     end
 
     def use_manifest(manifest_file)
@@ -254,10 +295,14 @@ module RokuBuilder
       File.open(test_file, "w") do |file|
         file.write(text)
       end
-      analyzer = Analyzer.new(config: @config)
-      warnings = analyzer.analyze(options: @options)
+      warnings = test
       FileUtils.rm(test_file) if File.exist?(test_file)
       warnings
+    end
+
+    def test
+      analyzer = Analyzer.new(config: @config)
+      analyzer.analyze(options: @options)
     end
 
     def print_all(warnings)
