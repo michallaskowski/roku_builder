@@ -274,6 +274,15 @@ module RokuBuilder
       assert_equal 1, warnings.count
       assert_match(/Manifest.*missing/, warnings[0][:message])
     end
+    def test_logging_error
+      test_logger_with_file_content(text: "stop", severity: :error)
+    end
+    def test_logging_warning
+      test_logger_with_file_content(text: "\"roCaptionRenderer\"", severity: :warn)
+    end
+    def test_logging_info
+      test_logger_with_file_content(text: "\"roSGScreen\"", severity: :info)
+    end
 
 
     private
@@ -289,20 +298,34 @@ module RokuBuilder
       FileUtils.cp(File.join(@root_dir, manifest_file), File.join(@root_dir, "manifest"))
     end
 
-    def test_file(text:, file: nil)
+    def test_file(text:, file: nil, quiet: true)
       file ||= "test.brs"
       test_file = File.join(@root_dir, "source", file)
       File.open(test_file, "w") do |file|
         file.write(text)
       end
-      warnings = test
+      warnings = test(quiet)
       FileUtils.rm(test_file) if File.exist?(test_file)
       warnings
     end
 
-    def test
+    def test_logger_with_file_content(text:, severity:)
+      logger = Minitest::Mock.new
+
+      logger.expect(:level=, nil, [Integer])
+      logger.expect(:formatter=, nil, [Proc])
+      logger.expect(severity, nil, [String])
+
+      ::Logger.stub :new, logger do
+        warnings = test_file(text: text, quiet: false)
+      end
+
+      logger.verify
+    end
+
+    def test(quiet=true)
       analyzer = Analyzer.new(config: @config)
-      analyzer.analyze(options: @options)
+      analyzer.analyze(options: @options, quiet: quiet)
     end
 
     def print_all(warnings)

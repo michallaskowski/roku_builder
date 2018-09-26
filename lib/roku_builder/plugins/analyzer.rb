@@ -23,7 +23,7 @@ module RokuBuilder
       [Loader]
     end
 
-    def analyze(options:)
+    def analyze(options:, quiet: false)
       @options = options
       @warnings = []
       analyzer_config = get_analyzer_config
@@ -41,10 +41,10 @@ module RokuBuilder
             @warnings.concat(line_inspector.run(file_path))
           end
           if file_path.end_with?("__MACOSX")
-            add_warning(warning: :packageMacosxDirectory, path: file_path, dir: dir)
+            add_warning(warning: :packageMacosxDirectory, path: file_path)
           end
           if file_path.end_with?(".zip", ".md", ".pkg")
-            add_warning(warning: :packageExtraneousFiles, path: file_path, dir: dir)
+            add_warning(warning: :packageExtraneousFiles, path: file_path)
           end
           has_source_dir  = true if file_path.end_with?("source")
         end
@@ -52,6 +52,7 @@ module RokuBuilder
           add_warning(warning: :packageSourceDirectory, path: "source")
         end
         @warnings.concat(raf_inspector.run(analyzer_config[:inspectors]))
+        print_warnings(dir) unless quiet
       end
       @warnings
     end
@@ -66,11 +67,34 @@ module RokuBuilder
       JSON.parse(File.open(file).read, {symbolize_names: true})
     end
 
-    def add_warning(warning:, path:, dir: nil)
+    def add_warning(warning:, path:)
       @warnings.push(@inspector_config[warning].deep_dup)
-      path = path.dup
-      path.slice!(dir) if dir
       @warnings.last[:path] = path
+    end
+
+    def print_warnings(dir)
+      logger = ::Logger.new(STDOUT)
+      logger.level  = @logger.level
+      logger.formatter = proc {|severity, _datetime, _progname, msg|
+        "%5s: %s\n\r" % [severity, msg]
+      }
+      @warnings.each do |warning|
+        message = warning[:message]
+        if warning[:path]
+          warning[:path].slice!(dir) if dir
+          warning[:path].slice!(/^\//)
+          message += ". pkg:/"+warning[:path]
+          message += ":"+warning[:line].to_s if warning[:line]
+        end
+        case(warning[:severity])
+        when "error"
+          logger.error(message)
+        when "warning"
+          logger.warn(message)
+        when "info"
+          logger.info(message)
+        end
+      end
     end
   end
   RokuBuilder.register_plugin(Analyzer)
