@@ -3,8 +3,8 @@
 module RokuBuilder
 
   class RafInspector
-    RAF_INTERFACE_INITIALIZATION_PATTERN = /roku_ads\(\)/
-    LIBRARY_IMPORT_PATTERN = /\s*library\s*"roku_ads.brs"\s*/
+    RAF_INTERFACE_INITIALIZATION_PATTERN = /roku_ads\(\)/i
+    LIBRARY_IMPORT_PATTERN = /\s*library\s*"roku_ads.brs"\s*/i
 
     def initialize(config:, dir:)
       @config = config

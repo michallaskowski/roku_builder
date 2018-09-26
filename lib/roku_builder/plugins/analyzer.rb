@@ -8,7 +8,7 @@ module RokuBuilder
 
     def self.commands
       {
-        analyze: {source: true},
+        analyze: {source: true, stage: true},
       }
     end
 

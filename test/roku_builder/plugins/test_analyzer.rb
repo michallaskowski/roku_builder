@@ -235,6 +235,12 @@ module RokuBuilder
       assert_equal 1, warnings.count
       assert_match(/integrated properly/, warnings[0][:message])
     end
+    def test_raf_proper_intergration_different_case
+      use_manifest("manifest_raf")
+      warnings = test_file(text: "library \"Roku_Ads.brs\"\nRoku_Ads()")
+      assert_equal 1, warnings.count
+      assert_match(/integrated properly/, warnings[0][:message])
+    end
     def test_macosx_directory
       config = good_config(AnalyzerTest)
       config[:projects][:project1][:folders].push("Test__MACOSX")
