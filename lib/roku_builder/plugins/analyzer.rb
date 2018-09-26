@@ -30,10 +30,12 @@ module RokuBuilder
       loader = Loader.new(config: @config)
       Dir.mktmpdir do |dir|
         loader.copy(options: options, path: dir)
-        inspector = ManifestInspector.new(config: @config, dir: dir)
-        warnings.concat(inspector.run(analyzer_config[:inspectors]))
-        inspector = LineInspector.new(config: @config, dir: dir)
-        warnings.concat(inspector.run(analyzer_config[:lineInspectors]))
+        raf_inspector = RafInspector.new(config: @config, dir: dir)
+        manifest_inspector = ManifestInspector.new(config: @config, dir: dir, raf: raf_inspector)
+        warnings.concat(manifest_inspector.run(analyzer_config[:inspectors]))
+        line_inspector = LineInspector.new(config: @config, dir: dir, raf: raf_inspector)
+        warnings.concat(line_inspector.run(analyzer_config[:lineInspectors]))
+        warnings.concat(raf_inspector.run(analyzer_config[:inspectors]))
       end
       warnings
     end
@@ -52,9 +54,10 @@ module RokuBuilder
 
 
   class LineInspector
-    def initialize(config:, dir:)
+    def initialize(config:, dir:, raf:)
       @config = config
       @dir = dir
+      @raf_inspector = raf
     end
 
     def run(inspector_config)
@@ -82,6 +85,7 @@ module RokuBuilder
                   add_warning(inspector: line_inspector, file: file_path, line: line_number)
                 end
               end
+              @raf_inspector.inspect_line(line: line, file: file_path, line_number: line_number)
               line_number += 1
             end
           end
@@ -100,9 +104,10 @@ module RokuBuilder
   end
 
   class ManifestInspector
-    def initialize(config:, dir:)
+    def initialize(config:, dir:, raf:)
       @config = config
       @dir = dir
+      @raf_inspector = raf
     end
 
     def run(inspector_config)
@@ -179,7 +184,8 @@ module RokuBuilder
             unless File.exist?(path)
               mapping = {"{0}": @attributes[key], "{1}": key }
               add_warning(warning: :manifestMissingFile, key: key, mapping: mapping)
-            else if attribute_config[:resolution]
+            else
+              if attribute_config[:resolution]
                 size = ImageSize.path(path).size
                 target = ImageSize::Size.new(attribute_config[:resolution])
                 unless size == target
@@ -197,8 +203,8 @@ module RokuBuilder
         elsif attribute_config[:required]
           add_warning(warning: :manifestMissingAttribute, key: key)
         end
+        @raf_inspector.inspect_manifest(attributes: @attributes, line_numbers: @line_numbers)
       end
-
       @warnings
     end
 
@@ -226,6 +232,76 @@ module RokuBuilder
           @warnings.last[:message].gsub!("{1}", @attributes[key])
         end
       end
+    end
+  end
+
+  class RafInspector
+    RAF_INTERFACE_INITIALIZATION_PATTERN = /roku_ads\(\)/
+    LIBRARY_IMPORT_PATTERN = /\s*library\s*"roku_ads.brs"\s*/
+
+    def initialize(config:, dir:)
+      @config = config
+      @dir = dir
+      @has_raf_interface_initialization = false
+      @interface_location = {}
+      @has_library_import = false
+      @import_location = {}
+      @has_manifest_entry = false
+      @manifest_location = {path: "manifest"}
+    end
+
+    def inspect_line(line:, file:, line_number:)
+      unless @has_raf_interface_initialization
+        @has_raf_interface_initialization = !!RAF_INTERFACE_INITIALIZATION_PATTERN.match(line)
+        if @has_raf_interface_initialization
+          @interface_location = {path: file, line: line_number}
+        end
+      end
+      unless @has_library_import
+        @has_library_import = !!LIBRARY_IMPORT_PATTERN.match(line)
+        if @has_library_import
+          @import_location = {path: file, line: line_number}
+        end
+      end
+    end
+
+    def inspect_manifest(attributes:, line_numbers:)
+      if attributes[:bs_libs_required] and attributes[:bs_libs_required].downcase == "roku_ads_lib"
+        @has_manifest_entry = true
+        @manifest_location[:line] = line_numbers[:bs_libs_required]
+      end
+    end
+
+    def run(inspector_config)
+      @warnings = []
+      @inspector_config = inspector_config
+      if @has_raf_interface_initialization and !@has_library_import
+        add_warning(warning: :rafConstructorPresentImportMissing, location: @interface_location)
+      end
+      if @has_raf_interface_initialization and !@has_manifest_entry
+        add_warning(warning: :rafConstructorPresentManifestMissing, location: @interface_location)
+      end
+      if !@has_raf_interface_initialization and @has_manifest_entry
+        add_warning(warning: :rafConstructorMissingManifestPresent, location: @manifest_location)
+      end
+      if @has_manifest_entry and !@has_library_import
+        add_warning(warning: :rafManifestPresentImportMissing, location: @manifest_location)
+      end
+      if !@has_raf_interface_initialization and @has_library_import
+        add_warning(warning: :rafConstructorMissingImportPresent, location: @import_location)
+      end
+      if @has_raf_interface_initialization and @has_library_import and @has_manifest_entry
+        add_warning(warning: :rafProperIntegration, location: @import_location)
+      end
+      @warnings
+    end
+
+    private
+
+    def add_warning(warning:, location:)
+      @warnings.push(@inspector_config[warning].deep_dup)
+      @warnings.last[:path] = location[:path]
+      @warnings.last[:line] = location[:line]
     end
   end
 end

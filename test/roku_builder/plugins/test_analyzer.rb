@@ -197,16 +197,55 @@ module RokuBuilder
       assert_equal 1, warnings.count
       assert_equal 1, warnings[0][:line]
     end
+    def test_raf_constructor_present_import_missing
+      use_manifest("manifest_raf")
+      warnings = test_file(text: "roku_ads()")
+      assert warnings.count > 0
+      assert_match(/constructor call is present.*import is missing/, warnings.first[:message])
+    end
+    def test_raf_constructor_present_manifest_missing
+      warnings = test_file(text: "library \"roku_ads.brs\"\nroku_ads()")
+      assert warnings.count > 0
+      assert_match(/manifest entry is missing/, warnings.first[:message])
+    end
+    def test_raf_constructor_missing_manifest_present
+      use_manifest("manifest_raf")
+      warnings = test_file(text: "library \"roku_ads.brs\"")
+      assert warnings.count > 0
+      assert_match(/constructor call is not present/, warnings.first[:message])
+    end
+    def test_raf_manifest_present_import_missing
+      use_manifest("manifest_raf")
+      warnings = test_file(text: "roku_ads()")
+      assert warnings.count > 0
+      assert_match(/manifest entry is present.*import is missing/, warnings.last[:message])
+    end
+    def test_raf_constructor_missing_import_present
+      use_manifest("manifest_raf")
+      warnings = test_file(text: "library \"roku_ads.brs\"")
+      assert warnings.count > 0
+      assert_match(/constructor call is not present.*import is present/, warnings.last[:message])
+    end
+    def test_raf_proper_intergration
+      use_manifest("manifest_raf")
+      warnings = test_file(text: "library \"roku_ads.brs\"\nroku_ads()")
+      assert_equal 1, warnings.count
+      assert_match(/integrated properly/, warnings[0][:message])
+    end
 
 
     private
 
     def test_manifest(manifest_file = nil)
       if manifest_file
-        FileUtils.cp(File.join(@root_dir, manifest_file), File.join(@root_dir, "manifest"))
+        use_manifest(manifest_file)
       end
       analyzer = Analyzer.new(config: @config)
       analyzer.analyze(options: @options)
+    end
+
+    def use_manifest(manifest_file)
+      FileUtils.cp(File.join(@root_dir, manifest_file), File.join(@root_dir, "manifest"))
     end
 
     def test_file(text:, file: nil)
