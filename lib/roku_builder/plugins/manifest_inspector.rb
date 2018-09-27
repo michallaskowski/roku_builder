@@ -53,6 +53,10 @@ module RokuBuilder
                   unless @attributes[key].to_f.to_s == @attributes[key]
                     add_warning(warning: :manifestInvalidValue, key: key)
                   end
+                when :boolean
+                  unless ["false", "true"].include? @attributes[key]
+                    add_warning(warning: :manifestInvalidValue, key: key)
+                  end
                 when :non_negative
                   unless @attributes[key].to_f >= 0
                     add_warning(warning: :manifestInvalidValue, key: key)
@@ -70,7 +74,7 @@ module RokuBuilder
                     add_warning(warning: :manifestInvalidValue, key: key)
                   end
                 else
-                  raise ImplementationError, "Unknown Validation"
+                  raise ImplementationError, "Unknown Validation #{type}"
                 end
               end
             end
