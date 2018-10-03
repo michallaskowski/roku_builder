@@ -167,6 +167,7 @@ module RokuBuilder
       start_reg = /\*+/
       end_reg = /#{SecureRandom.uuid}/
       lines = get_command_response(command: "loaded_textures", start_reg: start_reg, end_reg: end_reg)
+      lines = sort_image_lines(lines, /\s*\d+\sx\s+\d+\s+\d/, 3)
       lines.each {|line| print line}
     end
 

@@ -1,3 +1,7 @@
+ = 4.8.2 =
+
+ - Sort --profile textures command
+
  = 4.8.1 =
 
  - Add missing manifest validator
