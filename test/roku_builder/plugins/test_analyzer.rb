@@ -9,7 +9,7 @@ module RokuBuilder
       RokuBuilder.class_variable_set(:@@dev, false)
       RokuBuilder.setup_plugins
       register_plugins(Analyzer)
-      @config, @options = build_config_options_objects(AnalyzerTest, {analyze: true, working: true, quiet_analyze: true}, false)
+      @config, @options = build_config_options_objects(AnalyzerTest, {analyze: true, working: true}, false)
       @root_dir = @config.root_dir
       @device_config = @config.device_config
       FileUtils.cp(File.join(@root_dir, "manifest_template"), File.join(@root_dir, "manifest"))
@@ -26,6 +26,7 @@ module RokuBuilder
     def teardown
       manifest = File.join(@root_dir, "manifest")
       FileUtils.rm(manifest) if File.exist?(manifest)
+      remove_config
       @request_stubs.each {|req| remove_request_stub(req)}
     end
     def test_analyzer_parse_commands
@@ -252,7 +253,7 @@ module RokuBuilder
     def test_macosx_directory
       config = good_config(AnalyzerTest)
       config[:projects][:project1][:folders].push("Test__MACOSX")
-      @config, @options = build_config_options_objects(AnalyzerTest, {analyze: true, working: true, quiet_analyze: true}, false, config)
+      @config, @options = build_config_options_objects(AnalyzerTest, {analyze: true, working: true}, false, config)
       folder = File.join(@root_dir, "Test__MACOSX")
       Dir.mkdir(folder) unless File.exist?(folder)
       warnings = test
@@ -296,6 +297,70 @@ module RokuBuilder
     end
     def test_logging_info
       test_logger_with_file_content(text: "\"roSGScreen\"", severity: :info)
+    end
+    def test_performance_function_return_types
+      warnings = test_file(text: "function test() as String\n? \"test\"\nend function")
+      assert_equal 1, warnings.count
+      assert_match(/function return/, warnings[0][:message])
+    end
+    def test_performance_function_return_types_lowercase
+      warnings = test_file(text: "function test() as string\n? \"test\"\nend function")
+      assert_equal 1, warnings.count
+      assert_match(/function return/, warnings[0][:message])
+    end
+    def test_performance_aa_does_exist
+      warnings = test_file(text: "exists = aa.doesExist(\"test\")")
+      assert_equal 1, warnings.count
+      assert_match(/DoesExist check/, warnings[0][:message])
+    end
+    def test_performance_aa_string_ref
+      warnings = test_file(text: "aa[\"test\"] = \"test\"")
+      assert_equal 1, warnings.count
+      assert_match(/String referance/, warnings[0][:message])
+    end
+    def test_performance_for_loop
+      warnings = test_file(text: "FOR i=0 TO 10\n ? i\nEND FOR")
+      assert_equal 1, warnings.count
+      assert_match(/For loop found/, warnings[0][:message])
+    end
+    def test_performance_for_loop_lower_case
+      warnings = test_file(text: "for i=0 to 10\n ? i\nEND FOR")
+      assert_equal 1, warnings.count
+      assert_match(/For loop found/, warnings[0][:message])
+    end
+    def test_performance_for_loop_title_case
+      warnings = test_file(text: "For i=0 To 10\n ? i\nEND FOR")
+      assert_equal 1, warnings.count
+      assert_match(/For loop found/, warnings[0][:message])
+    end
+    def test_performance_regex
+      warnings = test_file(text: "\"roRegex\"")
+      assert_equal 1, warnings.count
+      assert_match(/Regexp found/, warnings[0][:message])
+    end
+    def test_library_skip
+      set_config({libraries: ["/source/test.brs"]})
+      warnings = test_file(text: "\"roRegex\"")
+      assert_equal 0, warnings.count
+    end
+    def test_library_skip_folder
+      set_config({libraries: ["/source"]})
+      warnings = test_file(text: "\"roRegex\"")
+      assert_equal 0, warnings.count
+    end
+    def test_library_include
+      @config, @options = build_config_options_objects(AnalyzerTest, {analyze: true, working: true, include_libraries: true}, false)
+      set_config({libraries: ["/source/test.brs"]})
+      warnings = test_file(text: "\"roRegex\"")
+      assert_equal 1, warnings.count
+    end
+    def test_performance_skip_warning_comment
+      warnings = test_file(text: "function test() as String 'ignore-warning\n? \"test\"\nend function")
+      assert_equal 0, warnings.count
+    end
+    def test_performance_skip_warning_comment_upper_case
+      warnings = test_file(text: "function test() as String 'IGNORE-WARNING\n? \"test\"\nend function")
+      assert_equal 0, warnings.count
     end
 
 
@@ -341,6 +406,19 @@ module RokuBuilder
       analyzer = Analyzer.new(config: @config)
       analyzer.analyze(options: @options, quiet: quiet)
     end
+
+    def set_config(config_content)
+      config = File.join(@root_dir, ".roku_builder_analyze.json")
+      File.open(config, "w") do |file|
+        file.write(config_content.to_json)
+      end
+    end
+
+    def remove_config
+      config = File.join(@root_dir, ".roku_builder_analyze.json")
+      FileUtils.rm(config) if File.exist? config
+    end
+
 
     def print_all(warnings)
       warnings.each do |warning|

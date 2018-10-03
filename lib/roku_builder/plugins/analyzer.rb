@@ -17,6 +17,10 @@ module RokuBuilder
       parser.on("--analyze", "Run a static analysis on a given stage") do
         options[:analyze] = true
       end
+      parser.separator "Options:"
+      parser.on("--inclide-libraries", "Include libraries in analyze") do
+        options[:include_libraries] = true
+      end
     end
 
     def self.dependencies
@@ -26,7 +30,9 @@ module RokuBuilder
     def analyze(options:, quiet: false)
       @options = options
       @warnings = []
-      analyzer_config = get_analyzer_config
+      plugin_config = get_config(".roku_builder_analyze.json", true) || {}
+      analyzer_config = get_config("inspector_config.json")
+      performance_config = get_config("performance_config.json")
       @inspector_config = analyzer_config[:inspectors]
       loader = Loader.new(config: @config)
       Dir.mktmpdir do |dir|
@@ -35,16 +41,23 @@ module RokuBuilder
         manifest_inspector = ManifestInspector.new(config: @config, dir: dir, raf: raf_inspector)
         @warnings.concat(manifest_inspector.run(analyzer_config[:inspectors]))
         has_source_dir = false
+        libraries = plugin_config[:libraries]
+        libraries ||= []
         Dir.glob(File.join(dir, "**", "*")).each do |file_path|
-          if File.file?(file_path) and file_path.end_with?(".brs", ".xml")
-            line_inspector = LineInspector.new(config: @config, raf: raf_inspector, inspector_config: analyzer_config[:lineInspectors])
-            @warnings.concat(line_inspector.run(file_path))
-          end
-          if file_path.end_with?("__MACOSX")
-            add_warning(warning: :packageMacosxDirectory, path: file_path)
-          end
-          if file_path.end_with?(".zip", ".md", ".pkg")
-            add_warning(warning: :packageExtraneousFiles, path: file_path)
+          file = file_path.dup; file.slice!(dir)
+          unless libraries.any_is_start?(file) and not @options[:include_libraries]
+            if File.file?(file_path) and file_path.end_with?(".brs", ".xml")
+              line_inspector_config = analyzer_config[:lineInspectors]
+              line_inspector_config += performance_config
+              line_inspector = LineInspector.new(config: @config, raf: raf_inspector, inspector_config: line_inspector_config)
+              @warnings.concat(line_inspector.run(file_path))
+            end
+            if file_path.end_with?("__MACOSX")
+              add_warning(warning: :packageMacosxDirectory, path: file_path)
+            end
+            if file_path.end_with?(".zip", ".md", ".pkg")
+              add_warning(warning: :packageExtraneousFiles, path: file_path)
+            end
           end
           has_source_dir  = true if file_path.end_with?("source")
         end
@@ -59,12 +72,13 @@ module RokuBuilder
 
     private
 
-    def get_analyzer_config
-      #url = "http://devtools.web.roku.com/static-code-analyzer/config.json"
-      #url = @options[:analyze_config] if @options[:analyze_config]
-      #JSON.parse(Faraday.get(url).body, {symbolize_names: true})
-      file = File.join(File.dirname(__FILE__), "inspector_config.json")
-      JSON.parse(File.open(file).read, {symbolize_names: true})
+    def get_config(file, project_root=false)
+      if project_root
+        file = File.join(@config.root_dir, file)
+      else
+        file = File.join(File.dirname(__FILE__), file)
+      end
+      JSON.parse(File.open(file).read, {symbolize_names: true}) if File.exist? file
     end
 
     def add_warning(warning:, path:)

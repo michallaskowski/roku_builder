@@ -1,3 +1,7 @@
+ = 4.9.0 =
+
+ - Add performance checks to --analyze command
+
  = 4.8.2 =
 
  - Sort --profile textures command
