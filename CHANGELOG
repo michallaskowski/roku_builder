@@ -1,3 +1,7 @@
+ = 4.9.1 =
+
+ - Performance check bug fixes
+
  = 4.9.0 =
 
  - Add performance checks to --analyze command
