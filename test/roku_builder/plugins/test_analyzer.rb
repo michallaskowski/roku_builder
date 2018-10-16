@@ -362,6 +362,10 @@ module RokuBuilder
       warnings = test_file(text: "function test() as String 'IGNORE-WARNING\n? \"test\"\nend function")
       assert_equal 0, warnings.count
     end
+    def test_performance_for_loop_title_case
+      warnings = test_file(text: "For each button in buttons\n ? button\nEND FOR")
+      assert_equal 0, warnings.count
+    end
 
 
     private

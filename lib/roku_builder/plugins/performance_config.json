@@ -10,12 +10,12 @@
     "message": "Found DoesExist check. Try using invalid check on dot referance"
   },
   {
-    "regex": "\\[\"[^\"]+\"\\]",
+    "regex": "[^\\s]+\\[\"[^\"]+\"\\]",
     "severity": "warning",
     "message": "Found AA String referance. Try switching to dot referance"
   },
   {
-    "regex": "FOR.*TO",
+    "regex": "FOR.*\\s+TO\\s+",
     "severity": "warning",
     "message": "For loop found. Try switching to a For Each loop"
   },

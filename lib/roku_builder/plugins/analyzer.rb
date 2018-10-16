@@ -98,7 +98,7 @@ module RokuBuilder
           warning[:path].slice!(dir) if dir
           warning[:path].slice!(/^\//)
           message += ". pkg:/"+warning[:path]
-          message += ":"+warning[:line].to_s if warning[:line]
+          message += ":"+(warning[:line]+1).to_s if warning[:line]
         end
         case(warning[:severity])
         when "error"
