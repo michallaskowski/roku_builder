@@ -1,0 +1,8 @@
+{
+  "libraries": [
+    "/components/Libraries",
+    "/components/Tasks/Reporting/adbmobile.brs",
+    "/components/Tasks/Reporting/ADBMobileTask.brs",
+    "/components/Tasks/Reporting/ADBMobileTask.xml"
+  ]
+}
