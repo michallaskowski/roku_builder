@@ -7,12 +7,12 @@
   {
     "regex": "DoesExist",
     "severity": "warning",
-    "message": "Found DoesExist check. Try using invalid check on dot referance"
+    "message": "Found DoesExist check. Try using invalid check on dot reference"
   },
   {
     "regex": "[^\\s]+\\[\"[^\"]+\"\\]",
     "severity": "warning",
-    "message": "Found AA String referance. Try switching to dot referance"
+    "message": "Found AA String reference. Try switching to dot reference"
   },
   {
     "regex": "FOR.*\\s+TO\\s+",
