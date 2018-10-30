@@ -182,7 +182,7 @@ module RokuBuilder
     end
 
     def fix_config_symbol_values
-      if @config[:devices]
+      if @config[:devices] and @config[:devices][:default]
         @config[:devices][:default] = @config[:devices][:default].to_sym
       end
       if @config[:projects]
@@ -192,7 +192,9 @@ module RokuBuilder
     end
 
     def fix_project_config_symbol_values
-      @config[:projects][:default] = @config[:projects][:default].to_sym
+      if @config[:projects] [:default]
+        @config[:projects][:default] = @config[:projects][:default].to_sym
+      end
       @config[:projects].each_pair do |key,value|
         next if is_skippable_project_key? key
         if value[:stage_method]
