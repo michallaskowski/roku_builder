@@ -316,7 +316,7 @@ module RokuBuilder
     def test_performance_aa_string_ref
       warnings = test_file(text: "aa[\"test\"] = \"test\"")
       assert_equal 1, warnings.count
-      assert_match(/String referance/, warnings[0][:message])
+      assert_match(/String reference/, warnings[0][:message])
     end
     def test_performance_for_loop
       warnings = test_file(text: "FOR i=0 TO 10\n ? i\nEND FOR")
